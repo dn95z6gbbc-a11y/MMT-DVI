@@ -1,4 +1,4 @@
-/* loader: v0.4.2 base → v0.5 learning → v0.5.1 MPGU examples → v0.6 RANEPA → v0.7 adaptive route → v0.7.1 label fix → v0.8 media ecosystem → v0.8.1 sequential gate */
+/* loader: v0.4.2 base → v0.5 learning → v0.5.1 MPGU examples → v0.6 RANEPA → v0.7 adaptive route → v0.7.1 label fix → v0.8 media ecosystem → v0.8.1 sequential gate → v0.9 interview + GITR */
 (function(){
   const base=document.createElement('script');
   base.src='app-v042.js?v=042';
@@ -23,6 +23,11 @@
               v08.onload=()=>{
                 const v081=document.createElement('script');
                 v081.src='v081.js?v=081';
+                v081.onload=()=>{
+                  const v09=document.createElement('script');
+                  v09.src='v09.js?v=090';
+                  document.body.appendChild(v09);
+                };
                 document.body.appendChild(v081);
               };
               document.body.appendChild(v08);
