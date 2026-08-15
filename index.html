@@ -1,0 +1,370 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MMT ДВИ — Wireframe v0.1</title>
+<style>
+:root{
+  --orange:#E77946;
+  --ink:#0C0C0C;
+  --paper:#FFFFFF;
+  --muted:#F3F3F3;
+  --line:#D9D9D9;
+  --soft:#6B6B6B;
+}
+*{box-sizing:border-box}
+body{margin:0;background:#ececec;font-family:Roboto,Arial,sans-serif;color:var(--ink)}
+.app{max-width:430px;margin:0 auto;background:var(--paper);min-height:100vh;position:relative;padding-bottom:78px;box-shadow:0 0 24px rgba(0,0,0,.08)}
+.top{position:sticky;top:0;background:#fff;border-bottom:1px solid var(--line);padding:14px 18px;z-index:5;display:flex;justify-content:space-between;align-items:center}
+.brand{font-family:Montserrat,Arial,sans-serif;font-weight:700;font-size:19px}
+.badge{background:var(--orange);padding:5px 9px;border-radius:999px;font-size:12px;font-weight:700}
+.screen{display:none;padding:20px 18px 30px}
+.screen.active{display:block}
+h1,h2,h3{font-family:Montserrat,Arial,sans-serif;margin:0 0 12px}
+h1{font-size:30px;line-height:1.05}
+h2{font-size:22px}
+h3{font-size:16px}
+p{line-height:1.45;margin:8px 0 14px}
+.sub{color:var(--soft)}
+.card{border:1px solid var(--line);border-radius:18px;padding:16px;margin:12px 0;background:#fff}
+.card.orange{border:2px solid var(--orange)}
+.btn{display:block;width:100%;border:0;border-radius:14px;padding:14px 16px;margin:10px 0;font-weight:700;font-size:15px;cursor:pointer;background:var(--orange);color:#0C0C0C}
+.btn.secondary{background:#fff;border:1px solid var(--ink)}
+.btn.ghost{background:var(--muted)}
+.row{display:flex;gap:10px}
+.row>*{flex:1}
+.input{width:100%;padding:14px;border:1px solid var(--line);border-radius:14px;font-size:15px;margin:8px 0}
+.pill{display:inline-block;border:1px solid var(--line);padding:8px 11px;border-radius:999px;margin:4px 4px 4px 0;background:#fff}
+.kpi{font-family:Montserrat,Arial,sans-serif;font-size:34px;font-weight:700}
+.progress{height:10px;background:#eee;border-radius:999px;overflow:hidden;margin:8px 0 4px}
+.progress>i{display:block;height:100%;background:var(--orange)}
+.list{padding:0;margin:0;list-style:none}
+.list li{padding:12px 0;border-bottom:1px solid #eee}
+.meta{font-size:12px;color:var(--soft)}
+.bottom{position:fixed;left:50%;transform:translateX(-50%);bottom:0;width:min(430px,100%);background:#fff;border-top:1px solid var(--line);display:flex;z-index:8}
+.nav{flex:1;text-align:center;padding:10px 2px;font-size:11px;cursor:pointer}
+.nav b{display:block;font-size:18px;margin-bottom:3px}
+.callout{background:var(--muted);padding:14px;border-radius:14px;margin:12px 0}
+.label{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--soft)}
+.score{display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid #eee}
+.check{display:flex;gap:8px;align-items:flex-start;margin:8px 0}
+.dot{width:9px;height:9px;background:var(--orange);border-radius:50%;margin-top:7px;flex:0 0 auto}
+.hero{padding:44px 0 24px}
+.logo{width:72px;height:72px;border-radius:18px;background:var(--orange);display:grid;place-items:center;font-family:Montserrat,Arial;font-size:28px;font-weight:800;margin-bottom:20px}
+.smalllink{font-size:13px;text-decoration:underline;cursor:pointer}
+.admin{background:#111;color:#fff;padding:16px;border-radius:18px}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="top">
+    <button id="backBtn" aria-label="Назад" style="border:0;background:#F3F3F3;border-radius:12px;padding:8px 11px;font-size:18px;cursor:pointer;visibility:hidden">←</button>
+    <div class="brand">MMT ДВИ</div>
+    <div class="badge">wireframe v0.2</div>
+  </div>
+
+  <section id="splash" class="screen active">
+    <div class="hero">
+      <div class="logo">MMT</div>
+      <h1>Поступление на журфак — по понятному маршруту</h1>
+      <p class="sub">Выбери вуз. Подготовься к ДВИ. Собери портфолио.</p>
+      <button class="btn" data-go="start">Начать</button>
+      <p class="smalllink" data-go="author">Кто создал приложение</p>
+    </div>
+  </section>
+
+  <section id="start" class="screen">
+    <h2>С чего начнём?</h2>
+    <div class="card orange" data-go="search">
+      <h3>Я знаю, куда хочу поступать</h3>
+      <p class="sub">Найти вуз и посмотреть условия.</p>
+    </div>
+    <div class="card" data-go="picker">
+      <h3>Помогите подобрать журфак</h3>
+      <p class="sub">Подобрать варианты по городу, бюджету, баллам и формату ДВИ.</p>
+    </div>
+  </section>
+
+  <section id="search" class="screen">
+    <h2>Найти вуз</h2>
+    <input class="input" value="СПбГИКиТ" aria-label="Поиск">
+    <div class="card orange" data-go="uni">
+      <h3>СПбГИКиТ</h3>
+      <p>Санкт-Петербург</p>
+      <span class="pill">Журналистика</span>
+      <span class="pill">Телевидение</span>
+    </div>
+    <div class="callout">Нет нужного вуза? <b>Сообщить MMT</b></div>
+  </section>
+
+  <section id="picker" class="screen">
+    <h2>Подбор журфака</h2>
+    <p class="label">Где готовы учиться?</p>
+    <button class="btn secondary">Только мой город</button>
+    <button class="btn secondary">Выбрать несколько городов</button>
+    <button class="btn ghost" data-go="results">По всей России</button>
+    <p class="label">Направление</p>
+    <span class="pill">Журналистика ✓</span>
+    <span class="pill">Телевидение ✓</span>
+    <span class="pill">Медиакоммуникации</span>
+    <p class="label">Условия</p>
+    <div class="check"><span class="dot"></span><span>Бюджет желательно</span></div>
+    <div class="check"><span class="dot"></span><span>До 350 000 ₽/год</span></div>
+    <button class="btn" data-go="results">Показать варианты</button>
+  </section>
+
+  <section id="results" class="screen">
+    <h2>Подходящие варианты</h2>
+    <p class="sub">7 программ по вашим условиям</p>
+    <div class="card orange" data-go="uni">
+      <h3>СПбГИКиТ</h3>
+      <p>Журналистика · Телевидение</p>
+      <div class="row">
+        <div><span class="meta">Бюджет</span><br><b>есть</b></div>
+        <div><span class="meta">Стоимость</span><br><b>от 283 000 ₽</b></div>
+      </div>
+    </div>
+    <div class="card">
+      <h3>ТГУ</h3><p>Журналистика</p>
+    </div>
+    <div class="card">
+      <h3>УрФУ</h3><p>Журналистика</p>
+    </div>
+    <button class="btn secondary">Сравнить выбранные</button>
+  </section>
+
+  <section id="uni" class="screen">
+    <h2>СПбГИКиТ</h2>
+    <p class="sub">Санкт-Петербург</p>
+    <div class="card orange">
+      <h3>42.03.02 Журналистика</h3>
+      <p>«Журналистика в медиаиндустрии»</p>
+      <span class="pill">очная · 4 года</span>
+      <div class="score"><span>Бюджет</span><b>6 мест</b></div>
+      <div class="score"><span>Платно</span><b>18 мест</b></div>
+      <div class="score"><span>Стоимость</span><b>283 000 ₽/год</b></div>
+    </div>
+    <div class="card">
+      <h3>Вступительные испытания</h3>
+      <div class="score"><span>Русский</span><b>56+</b></div>
+      <div class="score"><span>Литература</span><b>45+</b></div>
+      <div class="score"><span>Письменная работа</span><b>40+</b></div>
+      <div class="score"><span>Коллоквиум</span><b>40+</b></div>
+    </div>
+    <div class="callout"><b>Проверено MMT</b><br><span class="meta">официальные источники · дата проверки</span></div>
+    <button class="btn" data-go="signup">Добавить в мой план</button>
+    <button class="btn secondary" data-go="prepare">Посмотреть подготовку</button>
+  </section>
+
+  <section id="signup" class="screen">
+    <h2>Сохранить план</h2>
+    <p>Подключите аккаунт, чтобы сохранить вузы, прогресс и календарь.</p>
+    <button class="btn" data-go="home">Продолжить через Telegram</button>
+    <button class="btn ghost" data-go="home">Пока посмотреть демо</button>
+  </section>
+
+  <section id="home" class="screen">
+    <p class="label">Ближайшая цель</p>
+    <div class="card orange">
+      <h2>СПбГИКиТ</h2>
+      <p>До ДВИ — 46 дней</p>
+      <div class="kpi">61%</div>
+      <div class="progress"><i style="width:61%"></i></div>
+      <button class="btn" data-go="prepare">Продолжить подготовку</button>
+    </div>
+    <h3>Сегодня</h3>
+    <ul class="list">
+      <li>Новость №8 <span class="meta">· 20 мин</span></li>
+      <li>Российские СМИ <span class="meta">· 10 мин</span></li>
+      <li>СПбГИКиТ: письменная работа <span class="meta">· 30 мин</span></li>
+    </ul>
+    <div class="card" data-go="calendar"><b>10 июля</b><br>Последний день подачи документов</div>
+  </section>
+
+  <section id="prepare" class="screen">
+    <h2>Подготовка</h2>
+    <div class="card orange" data-go="base">
+      <h3>База MMT</h3><p>Журналистика, новости, репортаж, интервью, видео, статья.</p>
+      <div class="progress"><i style="width:74%"></i></div>
+    </div>
+    <div class="card" data-go="dvi">
+      <h3>Навыки ДВИ</h3><p>Эссе, творческий текст, тестирование, собеседование, повестка.</p>
+    </div>
+    <div class="card" data-go="spbgikit">
+      <h3>Мои вузы</h3><p>СПбГИКиТ · готовность 61%</p>
+    </div>
+  </section>
+
+  <section id="base" class="screen">
+    <h2>База MMT</h2>
+    <ul class="list">
+      <li>✓ Журналистика и медиасреда</li>
+      <li>✓ Новости <span class="meta">8/10</span></li>
+      <li data-go="lesson"><b>→ Репортаж</b></li>
+      <li>Интервью</li>
+      <li>Событийный видеосюжет</li>
+      <li>Тематический видеосюжет</li>
+      <li>Большая статья</li>
+      <li>Портфолио</li>
+      <li>Стажировка</li>
+    </ul>
+  </section>
+
+  <section id="lesson" class="screen">
+    <p class="label">Репортаж · урок 1</p>
+    <h2>Как увидеть событие, а не пересказать программу</h2>
+    <p>Короткая теория, примеры, детали наблюдения, работа с героями.</p>
+    <div class="callout"><b>Запомнить:</b> детали, которые журналист увидел сам, отличают репортаж от пересказа пресс-релиза.</div>
+    <button class="btn secondary">Проверить себя</button>
+    <button class="btn" data-go="task">Перейти к заданию</button>
+  </section>
+
+  <section id="task" class="screen">
+    <p class="label">Полевое задание</p>
+    <h2>Сделайте репортаж с реального события</h2>
+    <h3>До события</h3>
+    <div class="check"><span class="dot"></span><span>Изучить тему и программу</span></div>
+    <div class="check"><span class="dot"></span><span>Найти контакты организаторов</span></div>
+    <h3>На месте</h3>
+    <div class="check"><span class="dot"></span><span>Фиксировать детали и реакцию людей</span></div>
+    <div class="check"><span class="dot"></span><span>Получить комментарии</span></div>
+    <h3>После</h3>
+    <div class="check"><span class="dot"></span><span>Проверить факты и написать текст</span></div>
+    <button class="btn" data-go="review">Отправить работу</button>
+  </section>
+
+  <section id="review" class="screen">
+    <h2>Разбор работы</h2>
+    <div class="kpi">78/100</div>
+    <h3>Получилось хорошо</h3>
+    <div class="check"><span class="dot"></span><span>Есть эффект присутствия</span></div>
+    <div class="check"><span class="dot"></span><span>Комментарии работают на тему</span></div>
+    <h3>Требует доработки</h3>
+    <div class="check"><span class="dot"></span><span>Второй абзац перегружен предысторией</span></div>
+    <div class="callout"><b>Как исправить:</b> перенесите ключевую сцену выше и сократите бэкграунд.</div>
+    <button class="btn">Исправить работу</button>
+    <button class="btn secondary" data-go="prepare">Вернуться к подготовке</button>
+  </section>
+
+  <section id="dvi" class="screen">
+    <h2>Навыки ДВИ</h2>
+    <div class="card"><h3>Эссе</h3><p>Тезис, аргументация, примеры, контраргумент, вывод.</p></div>
+    <div class="card"><h3>Творческий текст</h3><p>Свободный и жанровый режимы.</p></div>
+    <div class="card"><h3>Тестирование</h3><p>Вопросы + работа над ошибками.</p></div>
+    <div class="card"><h3>Собеседование</h3><p>Текстовая симуляция с уточняющими вопросами.</p></div>
+    <div class="card"><h3>Актуальная повестка</h3><p>Главное за неделю и месяц.</p></div>
+  </section>
+
+  <section id="spbgikit" class="screen">
+    <h2>СПбГИКиТ</h2>
+    <div class="kpi">61%</div>
+    <div class="score"><span>Письменная работа</span><b>68%</b></div>
+    <div class="score"><span>Коллоквиум</span><b>55%</b></div>
+    <div class="score"><span>Повестка</span><b>62%</b></div>
+    <div class="score"><span>Портфолио</span><b>78%</b></div>
+    <div class="card orange">
+      <h3>Пробный ДВИ</h3>
+      <p>Экзаменационный режим: таймер, без подсказок, итоговый разбор.</p>
+      <button class="btn">Начать</button>
+    </div>
+  </section>
+
+  <section id="portfolio" class="screen">
+    <h2>Моё портфолио</h2>
+    <div class="row">
+      <div class="card"><span class="meta">Учебные</span><div class="kpi">15</div></div>
+      <div class="card"><span class="meta">В СМИ</span><div class="kpi">4</div></div>
+    </div>
+    <ul class="list">
+      <li>Новости <b>10</b></li>
+      <li>Репортаж <b>1</b></li>
+      <li>Интервью <b>1</b></li>
+      <li>Видео <b>2</b></li>
+      <li>Статья <b>1</b></li>
+      <li>Рекомендации <b>1</b></li>
+    </ul>
+    <button class="btn">+ Добавить работу</button>
+    <button class="btn secondary">Подготовить для СПбГИКиТ</button>
+  </section>
+
+  <section id="calendar" class="screen">
+    <h2>Календарь поступления</h2>
+    <div class="card orange"><b>10 июля</b><br>СПбГИКиТ · дедлайн документов</div>
+    <div class="card"><b>16 июля</b><br>Письменная работа</div>
+    <div class="card"><b>18 июля</b><br>Коллоквиум</div>
+    <div class="card"><b>25 июля</b><br>Результаты</div>
+    <p class="meta">Даты в wireframe демонстрационные.</p>
+  </section>
+
+  <section id="author" class="screen">
+    <h2>Автор проекта</h2>
+    <div class="card">
+      <h3>Олег Мушков</h3>
+      <p>Журналист · преподаватель журналистики · автор Mushkov Media Team.</p>
+    </div>
+    <div class="card orange">
+      <h3>Индивидуальная подготовка</h3>
+      <p>Количество мест на личную работу ограничено.</p>
+      <button class="btn">Подать заявку</button>
+    </div>
+  </section>
+
+  <section id="profile" class="screen">
+    <h2>Профиль</h2>
+    <div class="score"><span>Город</span><b>Омск</b></div>
+    <div class="score"><span>Класс</span><b>11</b></div>
+    <div class="score"><span>Мои вузы</span><b>3</b></div>
+    <div class="score"><span>MMT Pro</span><b>демо</b></div>
+    <button class="btn secondary" data-go="author">Об авторе</button>
+    <div class="admin">
+      <b>Админка MMT</b>
+      <p class="meta" style="color:#ccc">В реальном продукте — отдельный веб-интерфейс.</p>
+      <button class="btn">Открыть концепт админки</button>
+    </div>
+  </section>
+
+  <div class="bottom">
+    <div class="nav" data-go="home"><b>⌂</b>Главная</div>
+    <div class="nav" data-go="search"><b>⌕</b>Вузы</div>
+    <div class="nav" data-go="prepare"><b>▶</b>Подготовка</div>
+    <div class="nav" data-go="portfolio"><b>▣</b>Портфолио</div>
+    <div class="nav" data-go="profile"><b>●</b>Профиль</div>
+  </div>
+</div>
+<script>
+const navStack = ['splash'];
+
+function render(id){
+  document.querySelectorAll('.screen').forEach(x=>x.classList.remove('active'));
+  const s=document.getElementById(id);
+  if(s){
+    s.classList.add('active');
+    window.scrollTo(0,0);
+  }
+  const back = document.getElementById('backBtn');
+  back.style.visibility = navStack.length > 1 ? 'visible' : 'hidden';
+}
+
+function go(id){
+  const current = navStack[navStack.length - 1];
+  if(id !== current) navStack.push(id);
+  render(id);
+}
+
+function goBack(){
+  if(navStack.length > 1){
+    navStack.pop();
+    render(navStack[navStack.length - 1]);
+  }
+}
+
+document.getElementById('backBtn').addEventListener('click', goBack);
+
+document.addEventListener('click',e=>{
+  const t=e.target.closest('[data-go]');
+  if(t) go(t.dataset.go);
+});
+</script>
+</body>
+</html>
