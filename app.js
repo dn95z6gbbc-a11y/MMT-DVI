@@ -32,6 +32,11 @@
                     v091.onload=()=>{
                       const v010=document.createElement('script');
                       v010.src='v010.js?v=010';
+                      v010.onload=()=>{
+                        const fix=document.createElement('script');
+                        fix.src='v010-fix.js?v=0101';
+                        document.body.appendChild(fix);
+                      };
                       document.body.appendChild(v010);
                     };
                     document.body.appendChild(v091);
