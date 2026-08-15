@@ -55,8 +55,71 @@ function refresh(){
  const cw=document.getElementById('customWorks');if(cw)cw.innerHTML=state.works.map(w=>'<div class="action"><div class="ai">+</div><div><b>'+esc(w.title)+'</b><div class="meta">'+esc(w.genre)+' · '+esc(w.type)+'</div></div><b>'+(w.published?'СМИ':'')+'</b></div>').join('');
  document.querySelectorAll('.event[data-event]').forEach(el=>el.classList.toggle('done',!!state.calendarDone[el.dataset.event]));
  if(document.getElementById('event')?.classList.contains('active')){const d=events[selectedEvent];setText('eventTitle',d.title);setText('eventDate',d.date);setText('eventAction',d.action);setText('eventStatus',state.calendarDone[selectedEvent]?'выполнено':'не выполнено')}
+ refreshUniGate();
 }
 function setText(id,v){const x=document.getElementById(id);if(x)x.textContent=v}function setWidth(id,v){const x=document.getElementById(id);if(x)x.style.width=v+'%'}
 function esc(s){return s.replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]))}
 let tt;function toast(text){const t=document.getElementById('toast');t.textContent=text;t.classList.add('show');clearTimeout(tt);tt=setTimeout(()=>t.classList.remove('show'),2600)}
+
+/* v0.4.1: UX refinements from first user tests */
+(function setupV041(){
+ const ver=document.querySelector('.ver');if(ver)ver.textContent='v0.4.1';
+ document.title='MMT ДВИ — v0.4.1';
+
+ // Login: Telegram is an option, not the only gate.
+ const signup=document.getElementById('signup');
+ if(signup)signup.innerHTML=`<div class="eye">Сохранение плана</div><h2>Создать аккаунт</h2><p class="sub">После входа СПбГИКиТ попадёт в ваш план, а приложение добавит его ДВИ в маршрут, календарь и готовность.</p><div class="authgrid"><button class="btn secondary" data-auth="phone">По телефону</button><button class="btn secondary" data-auth="vk">Через VK</button><button class="btn secondary" data-auth="email">По e-mail</button><button class="btn secondary" data-auth="telegram">Через Telegram</button></div><div class="notice">В прототипе все способы ведут в демо-профиль. В рабочем приложении Telegram можно будет подключить отдельно для бота и уведомлений.</div><button class="btn" data-auth="demo">Добавить СПбГИКиТ в план и открыть демо</button>`;
+ signup.addEventListener('click',e=>{const b=e.target.closest('[data-auth]');if(!b)return;state.savedUni=true;saveState();toast('СПбГИКиТ добавлен в план');go('home')});
+
+ // Gate university-specific training until the university is in the plan.
+ document.addEventListener('click',e=>{
+   const g=e.target.closest('[data-go]');if(!g||state.savedUni)return;
+   const dest=g.dataset.go,section=g.closest('.screen')?.id;
+   const specific=dest==='spbgikit'||(section==='oral'&&dest==='oralTrainer');
+   if(specific){e.preventDefault();e.stopImmediatePropagation();toast('Сначала добавьте СПбГИКиТ в свой план');go('signup')}
+ },true);
+
+ // Separate personal preparation entry in profile.
+ const profile=document.getElementById('profile');
+ if(profile&&!document.getElementById('personalPrepCard')){
+   const about=[...profile.querySelectorAll('.card')].find(x=>x.textContent.includes('Об авторе'));
+   const c=document.createElement('div');c.id='personalPrepCard';c.className='card orange click';c.setAttribute('data-go','personalPrep');c.innerHTML='<h3>Индивидуальная подготовка с Олегом</h3><p class="meta">Отдельная заявка. Количество мест ограничено.</p>';
+   about?.before(c);
+ }
+
+ // Author page with photo and full current bio.
+ const author=document.getElementById('author');
+ if(author)author.innerHTML=`<div class="eye">Автор проекта</div><div class="authorhead"><img class="authorphoto" src="assets/oleg-profile.jpg" alt="Олег Мушков"><div><h2>Олег Мушков</h2><p class="sub">Журналист, преподаватель и автор Mushkov Media Team</p></div></div><div class="card"><h3>Сейчас</h3><div class="role"><span>01</span><p><b>Редактор благотворительного фонда помощи сиротам «Большая Перемена»</b></p></div><div class="role"><span>02</span><p><b>Старший преподаватель кафедры журналистики Московского гуманитарного университета</b></p></div><div class="role"><span>03</span><p><b>Автор, ведущий и со-продюсер образовательного ток-шоу о журналистике MMT-Live</b></p></div><div class="role"><span>04</span><p><b>Заместитель главного редактора журнала «Юрист спешит на помощь»</b></p></div><div class="role"><span>05</span><p><b>Аспирант Института педагогики и психологии Московского городского педагогического университета</b><br><span class="meta">Пишет диссертацию о сопровождении студентов-журналистов в вузе.</span></p></div></div><div class="card orange"><h3>Индивидуальная подготовка</h3><p class="sub">Отдельный формат личной работы. Заявка не требует сначала читать раздел «Об авторе» — вход есть и прямо из профиля.</p><button class="btn dark" data-go="personalPrep">Подать заявку</button></div><div class="card"><div class="row between"><div><h3>Результаты учеников</h3><p class="meta">Видеоотзывы тех, кто уже поступил</p></div><span class="status o">скоро</span></div><p class="sub">Сюда добавим короткие видеоотзывы выпускников подготовки: куда поступили, к какому ДВИ готовились и что оказалось самым полезным.</p><div class="video-placeholder">▶ Видеоотзыв 1</div><div class="video-placeholder">▶ Видеоотзыв 2</div></div>`;
+
+ // Personal preparation application screen.
+ if(!document.getElementById('personalPrep')){
+   const s=document.createElement('section');s.id='personalPrep';s.className='screen';s.innerHTML=`<div class="eye">Личная подготовка</div><h2>Заявка к Олегу</h2><p class="sub">Количество мест ограничено, поэтому это заявка, а не автоматическая покупка занятий.</p><div class="label">Имя</div><input class="input" placeholder="Ваше имя"><div class="label">Город и класс</div><input class="input" placeholder="Например: Воронеж, 11 класс"><div class="label">Куда планируете поступать?</div><textarea class="textarea" style="min-height:90px" placeholder="Вузы и направления"></textarea><div class="label">Что уже сделано?</div><textarea class="textarea" style="min-height:90px" placeholder="Новости, портфолио, стажировка, пробники..."></textarea><button class="btn" onclick="toast('Заявка сохранена в демо')">Отправить заявку</button>`;document.querySelector('main').appendChild(s);
+ }
+
+ // Portfolio guide requested in user testing.
+ const portfolio=document.getElementById('portfolio');
+ if(portfolio&&!document.getElementById('portfolioGuideCard')){
+   const internship=[...portfolio.querySelectorAll('.card')].find(x=>x.textContent.includes('Стажировка'));
+   const c=document.createElement('div');c.id='portfolioGuideCard';c.className='card click';c.setAttribute('data-go','portfolioGuide');c.innerHTML='<h3>Как собрать и оформить портфолио</h3><p class="meta">Структура, подписи, ссылки, QR, подтверждения и физическая папка.</p>';
+   internship?.before(c);
+ }
+ if(!document.getElementById('portfolioGuide')){
+   const s=document.createElement('section');s.id='portfolioGuide';s.className='screen';s.innerHTML=`<div class="eye">Портфолио MMT</div><h2>Не просто хранить работы — правильно их представить</h2><div class="card"><h3>Базовый чек-лист</h3><ul class="list"><li>Сначала сильные профессиональные публикации</li><li>У каждой работы: название, дата, СМИ, роль автора и ссылка</li><li>Видео и аудио — с рабочими ссылками и понятными подписями</li><li>Дипломы и рекомендации — отдельным блоком</li><li>Оригиналы и резервные файлы хранить отдельно</li></ul></div><div class="card softo"><h3>Под конкретный вуз</h3><p>Приложение будет выбирать из общего банка только те материалы, которые подходят под правила выбранной приёмной кампании.</p></div><div class="notice">Позже здесь появится редактор итоговой структуры и экспорт PDF. Для вузов, где нужна физическая папка, добавим отдельные рекомендации по печати и оформлению.</div>`;document.querySelector('main').appendChild(s);
+ }
+
+ // Show that lessons can have multiple media formats without forcing every lesson into video.
+ const lesson=document.getElementById('lesson');
+ if(lesson&&!document.getElementById('lessonFormats')){
+   const h=lesson.querySelector('h2');const f=document.createElement('div');f.id='lessonFormats';f.className='formatbar';f.innerHTML='<span class="pill active">Текст</span><span class="pill">Видео · позже</span><span class="pill">Аудио · позже</span>';h?.after(f);
+ }
+})();
+
+let originalUniPrep='';
+function refreshUniGate(){
+ const panel=document.getElementById('tab-uniprep');if(!panel)return;
+ if(!originalUniPrep)originalUniPrep=panel.innerHTML;
+ if(state.savedUni){if(panel.dataset.gated==='1'){panel.innerHTML=originalUniPrep;panel.dataset.gated='0'};return}
+ panel.dataset.gated='1';panel.innerHTML='<div class="card"><span class="status o">Можно посмотреть</span><h3 style="margin-top:10px">Подготовка к СПбГИКиТ ещё не в вашем плане</h3><p class="sub">Требования, программу ДВИ и примеры можно изучать свободно. Персональный прогресс, календарь и полноценные тренировки включатся после добавления вуза.</p></div><button class="btn" data-go="signup">Добавить СПбГИКиТ в план</button><button class="btn secondary" data-go="written">Посмотреть формат письменного ДВИ</button>';
+}
+
 refresh();
