@@ -1,4 +1,4 @@
-/* MMT ДВИ v0.5.1 — реальный билет МПГУ 18.07.2024 */
+/* MMT ДВИ v0.5.1 — пример билета МПГУ из материалов ученицы */
 (function setupV051(){
   const ver=document.querySelector('.ver'); if(ver) ver.textContent='v0.5.1';
   document.title='MMT ДВИ — v0.5.1';
@@ -27,7 +27,7 @@
     const old=[...mpgu.querySelectorAll('.card')].find(x=>x.textContent.includes('Пример из материалов MMT'));
     if(old){
       const card=document.createElement('div'); card.className='card';
-      card.innerHTML=`<div class="row between"><div><h3>Реальный билет МПГУ</h3><p class="meta">18 июля 2024 · творческое сочинение</p></div><span class="sourcechip">реальный билет</span></div><div class="ticketlist">${mpguTopics.map((t,i)=>`<div class="tickettopic"><b>Тема ${i+1}</b>${t}</div>`).join('')}</div><div class="demoSource"><b>Источник этого блока:</b> фотография реального экзаменационного билета, предоставленная учеником/ученицей. Это подтверждает темы конкретного экзамена 18 июля 2024 года, но не означает, что они повторятся в будущей кампании.</div><button class="btn secondary" data-go="mpguTicket">Потренироваться на этом билете</button>`;
+      card.innerHTML=`<div class="row between"><div><h3>Пример экзаменационного билета</h3><p class="meta">18 июля 2024 · из материалов ученицы</p></div><span class="sourcechip">не верифицирован</span></div><div class="ticketlist">${mpguTopics.map((t,i)=>`<div class="tickettopic"><b>Тема ${i+1}</b>${t}</div>`).join('')}</div><div class="demoSource"><b>Источник этого блока:</b> фотография, присланная ученицей после экзамена. Мы не подтверждаем её как официальный документ МПГУ и не публикуем само фото. Темы используем только как пример для тренировки.</div><button class="btn secondary" data-go="mpguTicket">Потренироваться на этих темах</button>`;
       old.replaceWith(card);
     }
   }
@@ -39,21 +39,21 @@
     const hero=prep.querySelector('.card.hero');
     if(hero && !document.getElementById('mpguMethodNote')){
       const note=document.createElement('div'); note.id='mpguMethodNote'; note.className='card';
-      note.innerHTML='<h3>Что видно по реальному билету 2024</h3><div class="mmtread"><p><b>Методический вывод MMT, а не официальное правило:</b></p><p>в одном билете соседствуют очень разные входы в текст — цитата, предметный монолог и литературная тема. Поэтому готовиться только к одному типу вроде «монолога предмета» недостаточно.</p></div>';
+      note.innerHTML='<h3>Что полезно отработать по этому примеру</h3><div class="mmtread"><p><b>Методический вывод MMT, а не официальное правило:</b></p><p>в одном наборе соседствуют очень разные входы в текст — цитата, предметный монолог и литературная тема. Поэтому готовиться только к одному типу вроде «монолога предмета» недостаточно.</p></div>';
       hero.after(note);
     }
   }
 
   appendScreen('mpguTicket',`
-    <div class="eye">МПГУ · реальный билет</div><h2>Творческое сочинение</h2>
-    <div class="demoSource"><b>18 июля 2024.</b> Ниже — четыре темы с фотографии реального билета. В тренировке можно выбрать любую одну, как на экзамене.</div>
+    <div class="eye">МПГУ · пример из материалов ученицы</div><h2>Творческое сочинение</h2>
+    <div class="demoSource"><b>18 июля 2024.</b> Ниже — четыре темы с фотографии, присланной ученицей. Источник не верифицирован как официальный документ МПГУ. Для тренировки можно выбрать любую одну тему.</div>
     <div class="ticketlist" id="mpguTicketTopics">${mpguTopics.map((t,i)=>`<button class="tickettopic ${i===state.mpguSelectedTopic?'selected':''}" data-mpgu-topic="${i}" onclick="selectMpguTopic(${i})"><b>Тема ${i+1}</b>${t}</button>`).join('')}</div>
     <div class="card softo"><h3>Перед тем как писать</h3><p>За 3–5 минут сформулируйте: кто или что будет центром текста, какой конфликт/вопрос вы разворачиваете, откуда начинается движение и к чему придёте в финале.</p><p class="meta">Это рекомендация MMT для тренировки, не формулировка экзаменационной комиссии.</p></div>
     <div class="label">Выбранная тема</div><div id="mpguChosenTopic" class="formula"></div>
     <div class="label">Замысел в 2–4 предложениях</div><textarea id="mpguIdea" class="textarea" style="min-height:90px" placeholder="О чём будет ваш текст и в чём его ход?"></textarea>
     <div class="label">Начало текста</div><textarea id="mpguDraft" class="textarea" placeholder="Напишите первые абзацы..."></textarea>
     <button class="btn" onclick="saveMpguTicketDraft()">Сохранить тренировку</button>
-    <button class="btn secondary" onclick="randomMpguTopic()">Выдать случайную тему из билета</button>`);
+    <button class="btn secondary" onclick="randomMpguTopic()">Выдать случайную тему из набора</button>`);
 
   window.selectMpguTopic=function(i){
     state.mpguSelectedTopic=i; saveState(); renderMpguTicket();
