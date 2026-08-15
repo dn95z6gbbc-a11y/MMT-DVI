@@ -1,4 +1,4 @@
-/* loader: v0.4.2 base → v0.5 learning → v0.5.1 MPGU examples → v0.6 RANEPA */
+/* loader: v0.4.2 base → v0.5 learning → v0.5.1 MPGU examples → v0.6 RANEPA → v0.7 adaptive route */
 (function(){
   const base=document.createElement('script');
   base.src='app-v042.js?v=042';
@@ -11,6 +11,11 @@
       v051.onload=()=>{
         const v06=document.createElement('script');
         v06.src='v06.js?v=060';
+        v06.onload=()=>{
+          const v07=document.createElement('script');
+          v07.src='v07.js?v=070';
+          document.body.appendChild(v07);
+        };
         document.body.appendChild(v06);
       };
       document.body.appendChild(v051);
