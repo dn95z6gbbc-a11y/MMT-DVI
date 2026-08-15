@@ -2,369 +2,112 @@
 <html lang="ru">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>MMT ДВИ — Wireframe v0.1</title>
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0C0C0C">
+<title>MMT ДВИ — прототип v0.3</title>
 <style>
-:root{
-  --orange:#E77946;
-  --ink:#0C0C0C;
-  --paper:#FFFFFF;
-  --muted:#F3F3F3;
-  --line:#D9D9D9;
-  --soft:#6B6B6B;
-}
-*{box-sizing:border-box}
-body{margin:0;background:#ececec;font-family:Roboto,Arial,sans-serif;color:var(--ink)}
-.app{max-width:430px;margin:0 auto;background:var(--paper);min-height:100vh;position:relative;padding-bottom:78px;box-shadow:0 0 24px rgba(0,0,0,.08)}
-.top{position:sticky;top:0;background:#fff;border-bottom:1px solid var(--line);padding:14px 18px;z-index:5;display:flex;justify-content:space-between;align-items:center}
-.brand{font-family:Montserrat,Arial,sans-serif;font-weight:700;font-size:19px}
-.badge{background:var(--orange);padding:5px 9px;border-radius:999px;font-size:12px;font-weight:700}
-.screen{display:none;padding:20px 18px 30px}
-.screen.active{display:block}
-h1,h2,h3{font-family:Montserrat,Arial,sans-serif;margin:0 0 12px}
-h1{font-size:30px;line-height:1.05}
-h2{font-size:22px}
-h3{font-size:16px}
-p{line-height:1.45;margin:8px 0 14px}
-.sub{color:var(--soft)}
-.card{border:1px solid var(--line);border-radius:18px;padding:16px;margin:12px 0;background:#fff}
-.card.orange{border:2px solid var(--orange)}
-.btn{display:block;width:100%;border:0;border-radius:14px;padding:14px 16px;margin:10px 0;font-weight:700;font-size:15px;cursor:pointer;background:var(--orange);color:#0C0C0C}
-.btn.secondary{background:#fff;border:1px solid var(--ink)}
-.btn.ghost{background:var(--muted)}
-.row{display:flex;gap:10px}
-.row>*{flex:1}
-.input{width:100%;padding:14px;border:1px solid var(--line);border-radius:14px;font-size:15px;margin:8px 0}
-.pill{display:inline-block;border:1px solid var(--line);padding:8px 11px;border-radius:999px;margin:4px 4px 4px 0;background:#fff}
-.kpi{font-family:Montserrat,Arial,sans-serif;font-size:34px;font-weight:700}
-.progress{height:10px;background:#eee;border-radius:999px;overflow:hidden;margin:8px 0 4px}
-.progress>i{display:block;height:100%;background:var(--orange)}
-.list{padding:0;margin:0;list-style:none}
-.list li{padding:12px 0;border-bottom:1px solid #eee}
-.meta{font-size:12px;color:var(--soft)}
-.bottom{position:fixed;left:50%;transform:translateX(-50%);bottom:0;width:min(430px,100%);background:#fff;border-top:1px solid var(--line);display:flex;z-index:8}
-.nav{flex:1;text-align:center;padding:10px 2px;font-size:11px;cursor:pointer}
-.nav b{display:block;font-size:18px;margin-bottom:3px}
-.callout{background:var(--muted);padding:14px;border-radius:14px;margin:12px 0}
-.label{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--soft)}
-.score{display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid #eee}
-.check{display:flex;gap:8px;align-items:flex-start;margin:8px 0}
-.dot{width:9px;height:9px;background:var(--orange);border-radius:50%;margin-top:7px;flex:0 0 auto}
-.hero{padding:44px 0 24px}
-.logo{width:72px;height:72px;border-radius:18px;background:var(--orange);display:grid;place-items:center;font-family:Montserrat,Arial;font-size:28px;font-weight:800;margin-bottom:20px}
-.smalllink{font-size:13px;text-decoration:underline;cursor:pointer}
-.admin{background:#111;color:#fff;padding:16px;border-radius:18px}
+:root{--orange:#E77946;--ink:#0C0C0C;--paper:#fff;--bg:#F4F2EF;--soft:#6E6B68;--line:#E4E0DC;--panel:#F8F6F3;--green:#178E58;--yellow:#B47B0A;--red:#C5443D;--shadow:0 18px 50px rgba(25,18,12,.09);--r:22px;--safe:env(safe-area-inset-bottom)}
+*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:#E9E6E2;color:var(--ink);font-family:Roboto,-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif}.shell{width:min(430px,100%);min-height:100vh;margin:auto;background:var(--paper);position:relative;box-shadow:0 0 60px rgba(0,0,0,.10);overflow-x:hidden}.appbar{height:62px;padding:8px 14px;display:grid;grid-template-columns:42px 1fr 42px;align-items:center;position:sticky;top:0;background:rgba(255,255,255,.94);backdrop-filter:blur(16px);z-index:20;border-bottom:1px solid rgba(228,224,220,.8)}.brand{text-align:center;font-family:Montserrat,"Arial Black",Arial,sans-serif;font-weight:800;letter-spacing:-.02em}.brand i{font-style:normal;color:var(--orange)}.iconbtn{height:40px;width:40px;border:0;border-radius:14px;background:var(--panel);font-size:19px;display:grid;place-items:center;cursor:pointer;color:var(--ink)}#backBtn{visibility:hidden}.version{font-size:10px;border:1px solid var(--line);border-radius:999px;padding:4px 6px;line-height:1;background:white}.screen{display:none;padding:18px 18px calc(96px + var(--safe));animation:fade .18s ease}.screen.active{display:block}@keyframes fade{from{opacity:.5;transform:translateY(3px)}to{opacity:1;transform:none}}h1,h2,h3{font-family:Montserrat,"Arial Black",Arial,sans-serif;letter-spacing:-.025em;margin:0}h1{font-size:34px;line-height:1.03}h2{font-size:25px;line-height:1.12}h3{font-size:17px;line-height:1.2}p{line-height:1.48}.eyebrow{font-size:11px;text-transform:uppercase;letter-spacing:.09em;font-weight:800;color:var(--soft);margin:0 0 8px}.muted{color:var(--soft)}.small{font-size:12px}.hero{padding:38px 0 18px}.mark{width:78px;height:78px;border-radius:24px;background:var(--orange);display:grid;place-items:center;font:900 28px Montserrat,Arial,sans-serif;box-shadow:0 16px 30px rgba(231,121,70,.28);margin-bottom:24px}.hero h1{max-width:360px}.hero p{font-size:17px;color:var(--soft);margin:14px 0 25px}.btn{width:100%;border:0;border-radius:16px;padding:15px 17px;font-weight:800;font-size:15px;cursor:pointer;background:var(--orange);color:var(--ink);display:flex;justify-content:center;align-items:center;gap:8px;margin:10px 0;min-height:52px}.btn.dark{background:var(--ink);color:white}.btn.secondary{background:white;border:1px solid var(--line)}.btn.soft{background:var(--panel)}.btn.link{background:transparent;padding:8px;margin:4px 0;color:var(--soft);font-weight:700}.card{background:white;border:1px solid var(--line);border-radius:var(--r);padding:17px;margin:12px 0;box-shadow:0 2px 0 rgba(0,0,0,.01)}.card.press{cursor:pointer;transition:.15s}.card.press:active{transform:scale(.985)}.card.accent{border-color:rgba(231,121,70,.65);box-shadow:0 10px 32px rgba(231,121,70,.08)}.card.dark{background:var(--ink);color:white;border-color:var(--ink)}.card.orange{background:var(--orange);border-color:var(--orange)}.split{display:flex;justify-content:space-between;gap:14px;align-items:flex-start}.arrow{font-size:22px;color:var(--soft)}.chips{display:flex;flex-wrap:wrap;gap:7px;margin-top:10px}.chip{padding:7px 10px;border-radius:999px;background:var(--panel);font-size:12px;font-weight:700;border:1px solid transparent}.chip.on{background:#FFF0E8;color:#9B4925;border-color:#F5C6AF}.chip.ok{background:#EAF7F0;color:#166B45}.searchbox{display:flex;gap:10px;align-items:center;background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:14px 15px;margin:12px 0 18px}.searchbox input{border:0;outline:0;background:transparent;font-size:15px;width:100%;color:var(--ink)}.row{display:flex;gap:10px}.row>*{flex:1}.stat{background:var(--panel);border-radius:17px;padding:13px}.stat b{display:block;font-size:20px;font-family:Montserrat,Arial,sans-serif;margin-top:4px}.label{font-size:11px;text-transform:uppercase;letter-spacing:.07em;font-weight:800;color:var(--soft)}.divider{height:1px;background:var(--line);margin:14px 0}.line{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--line)}.line:last-child{border-bottom:0}.line b{text-align:right}.progress{height:9px;background:#ECE8E4;border-radius:999px;overflow:hidden}.progress i{display:block;height:100%;background:var(--orange);border-radius:999px}.bigscore{font:900 42px Montserrat,Arial,sans-serif;line-height:1}.goalhead{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}.goalhead .days{font-size:12px;background:#FFF0E8;color:#9B4925;padding:7px 9px;border-radius:999px;font-weight:800}.taskitem{display:grid;grid-template-columns:34px 1fr auto;gap:10px;align-items:center;padding:13px 0;border-bottom:1px solid var(--line)}.taskitem:last-child{border:0}.tasknum{height:32px;width:32px;border-radius:11px;background:var(--panel);display:grid;place-items:center;font-weight:900}.tasktime{font-size:11px;color:var(--soft)}.timeline{position:relative;padding-left:24px}.timeline:before{content:"";position:absolute;left:7px;top:10px;bottom:10px;width:2px;background:var(--line)}.event{position:relative;padding:0 0 20px}.event:before{content:"";position:absolute;left:-21px;top:4px;width:10px;height:10px;background:white;border:3px solid var(--orange);border-radius:50%}.event.critical:before{border-color:var(--red)}.event b{display:block;margin-bottom:4px}.event .date{font-size:12px;color:var(--soft)}.course{display:grid;grid-template-columns:42px 1fr auto;gap:11px;align-items:center;padding:12px 0;border-bottom:1px solid var(--line);cursor:pointer}.course:last-child{border:0}.courseicon{width:42px;height:42px;border-radius:14px;background:var(--panel);display:grid;place-items:center;font-weight:900}.course.done .courseicon{background:#EAF7F0;color:var(--green)}.course.now .courseicon{background:#FFF0E8;color:#9B4925}.course small{display:block;color:var(--soft);margin-top:3px}.callout{background:var(--panel);border-radius:18px;padding:15px;margin:14px 0}.callout.warn{background:#FFF7E6}.callout.good{background:#EAF7F0}.steps{counter-reset:s}.step{display:grid;grid-template-columns:30px 1fr;gap:10px;padding:10px 0}.step:before{counter-increment:s;content:counter(s);width:28px;height:28px;border-radius:10px;background:var(--ink);color:white;display:grid;place-items:center;font-weight:800;font-size:12px}.criterion{display:flex;gap:10px;padding:10px 0}.bullet{height:9px;width:9px;margin-top:7px;border-radius:50%;background:var(--orange);flex:0 0 auto}.scoreline{display:grid;grid-template-columns:1fr auto;gap:12px;align-items:center;padding:11px 0;border-bottom:1px solid var(--line)}.scoreline:last-child{border:0}.scoreline strong{font-family:Montserrat,Arial,sans-serif}.scoreline .mini{font-size:11px;color:var(--soft);margin-top:3px}.portfolio-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.portfolio-grid .card{margin:0;min-height:105px}.portfolio-grid .n{font:900 30px Montserrat,Arial,sans-serif;margin-top:10px}.source{display:flex;gap:10px;align-items:flex-start;background:#F2F7F4;border-radius:16px;padding:13px}.source .seal{height:28px;width:28px;border-radius:50%;background:#DFF1E8;color:var(--green);display:grid;place-items:center;font-weight:900}.bottomnav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:min(430px,100%);height:72px;padding-bottom:var(--safe);background:rgba(255,255,255,.96);backdrop-filter:blur(18px);border-top:1px solid var(--line);display:flex;z-index:30}.nav{flex:1;border:0;background:transparent;color:var(--soft);font-size:10px;font-weight:700;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:4px;cursor:pointer}.nav span{font-size:20px;line-height:1}.nav.active{color:var(--ink)}.nav.active span{color:var(--orange)}.notice{position:fixed;left:50%;bottom:84px;transform:translate(-50%,20px);width:min(390px,calc(100% - 36px));background:var(--ink);color:white;border-radius:16px;padding:13px 15px;z-index:40;opacity:0;pointer-events:none;transition:.2s;font-size:13px;box-shadow:var(--shadow)}.notice.show{opacity:1;transform:translate(-50%,0)}.toggle{width:44px;height:26px;border-radius:999px;background:var(--orange);padding:3px;display:flex;justify-content:flex-end}.toggle i{width:20px;height:20px;border-radius:50%;background:white}.protag{display:inline-flex;align-items:center;gap:5px;background:var(--orange);padding:5px 8px;border-radius:999px;font-size:11px;font-weight:900}.exam{background:var(--ink);color:white;border-radius:24px;padding:18px}.timer{font:900 30px Montserrat,Arial,sans-serif}.option{border:1px solid var(--line);padding:13px;border-radius:14px;margin:8px 0;cursor:pointer}.option.sel{border-color:var(--orange);background:#FFF5EF}.topspace{margin-top:18px}@media(min-width:700px){body{padding:18px 0}.shell{border-radius:28px;min-height:calc(100vh - 36px);overflow:hidden}.bottomnav{bottom:18px;border-radius:0 0 28px 28px}.notice{bottom:102px}}
 </style>
 </head>
 <body>
-<div class="app">
-  <div class="top">
-    <button id="backBtn" aria-label="Назад" style="border:0;background:#F3F3F3;border-radius:12px;padding:8px 11px;font-size:18px;cursor:pointer;visibility:hidden">←</button>
-    <div class="brand">MMT ДВИ</div>
-    <div class="badge">wireframe v0.2</div>
-  </div>
+<div class="shell">
+<header class="appbar"><button class="iconbtn" id="backBtn" aria-label="Назад">←</button><div class="brand">MMT <i>ДВИ</i></div><div class="version">v0.3</div></header>
 
-  <section id="splash" class="screen active">
-    <div class="hero">
-      <div class="logo">MMT</div>
-      <h1>Поступление на журфак — по понятному маршруту</h1>
-      <p class="sub">Выбери вуз. Подготовься к ДВИ. Собери портфолио.</p>
-      <button class="btn" data-go="start">Начать</button>
-      <p class="smalllink" data-go="author">Кто создал приложение</p>
-    </div>
-  </section>
+<section id="splash" class="screen active">
+ <div class="hero"><div class="mark">MMT</div><p class="eyebrow">Поступление на журналистику</p><h1>Понятный маршрут от выбора вуза до ДВИ</h1><p>Подбери программу, освой базу журналистики, собери портфолио и подготовься к экзамену конкретного вуза.</p><button class="btn dark" data-go="start">Начать <span>→</span></button><button class="btn link" data-go="author">Кто создал MMT ДВИ</button></div>
+ <div class="callout small"><b>Прототип.</b> Некоторые даты и результаты ниже демонстрационные — сейчас проверяем интерфейс и сценарии.</div>
+</section>
 
-  <section id="start" class="screen">
-    <h2>С чего начнём?</h2>
-    <div class="card orange" data-go="search">
-      <h3>Я знаю, куда хочу поступать</h3>
-      <p class="sub">Найти вуз и посмотреть условия.</p>
-    </div>
-    <div class="card" data-go="picker">
-      <h3>Помогите подобрать журфак</h3>
-      <p class="sub">Подобрать варианты по городу, бюджету, баллам и формату ДВИ.</p>
-    </div>
-  </section>
+<section id="start" class="screen"><p class="eyebrow">Первый шаг</p><h2>С чего начнём?</h2><p class="muted">Можно сначала просто посмотреть вузы. Регистрация понадобится позже, когда захочется сохранить план.</p>
+ <div class="card press accent" data-go="search"><div class="split"><div><h3>Я знаю свой вуз</h3><p class="muted">Найти университет и посмотреть требования.</p></div><div class="arrow">→</div></div></div>
+ <div class="card press" data-go="picker"><div class="split"><div><h3>Помогите подобрать</h3><p class="muted">Город, бюджет, стоимость, ДВИ и другие условия.</p></div><div class="arrow">→</div></div></div>
+</section>
 
-  <section id="search" class="screen">
-    <h2>Найти вуз</h2>
-    <input class="input" value="СПбГИКиТ" aria-label="Поиск">
-    <div class="card orange" data-go="uni">
-      <h3>СПбГИКиТ</h3>
-      <p>Санкт-Петербург</p>
-      <span class="pill">Журналистика</span>
-      <span class="pill">Телевидение</span>
-    </div>
-    <div class="callout">Нет нужного вуза? <b>Сообщить MMT</b></div>
-  </section>
+<section id="search" class="screen"><p class="eyebrow">Вузы</p><h2>Найти университет</h2><div class="searchbox"><span>⌕</span><input value="СПбГИКиТ" aria-label="Поиск вуза"></div>
+ <div class="card press accent" data-go="uni"><div class="split"><div><p class="eyebrow">Санкт-Петербург</p><h3>СПбГИКиТ</h3></div><div class="arrow">→</div></div><div class="chips"><span class="chip on">Журналистика</span><span class="chip">Телевидение</span></div><div class="divider"></div><div class="row"><div class="stat"><span class="label">Бюджет</span><b>есть</b></div><div class="stat"><span class="label">ДВИ</span><b>2</b></div></div></div>
+ <div class="callout"><b>Не нашли нужный вуз?</b><p class="small muted">Сообщите MMT. Так мы увидим, какие университеты добавлять в базу следующими.</p><button class="btn secondary" data-toast="Запрос на вуз сохранён в демо">Сообщить о вузе</button></div>
+</section>
 
-  <section id="picker" class="screen">
-    <h2>Подбор журфака</h2>
-    <p class="label">Где готовы учиться?</p>
-    <button class="btn secondary">Только мой город</button>
-    <button class="btn secondary">Выбрать несколько городов</button>
-    <button class="btn ghost" data-go="results">По всей России</button>
-    <p class="label">Направление</p>
-    <span class="pill">Журналистика ✓</span>
-    <span class="pill">Телевидение ✓</span>
-    <span class="pill">Медиакоммуникации</span>
-    <p class="label">Условия</p>
-    <div class="check"><span class="dot"></span><span>Бюджет желательно</span></div>
-    <div class="check"><span class="dot"></span><span>До 350 000 ₽/год</span></div>
-    <button class="btn" data-go="results">Показать варианты</button>
-  </section>
+<section id="picker" class="screen"><p class="eyebrow">Подбор</p><h2>Что для вас важно?</h2><p class="muted">Это не анкета навсегда — фильтры можно менять.</p>
+ <h3 class="topspace">География</h3><div class="chips"><span class="chip">Мой город</span><span class="chip">Несколько городов</span><span class="chip on">Вся Россия</span></div>
+ <h3 class="topspace">Направление</h3><div class="chips"><span class="chip on">Журналистика</span><span class="chip on">Телевидение</span><span class="chip">Медиакоммуникации</span></div>
+ <div class="card"><div class="line"><span>Бюджет желательно</span><div class="toggle"><i></i></div></div><div class="line"><span>Максимум за год</span><b>350 000 ₽</b></div><div class="line"><span>Форма</span><b>очная</b></div><div class="line"><span>Общежитие</span><b>неважно</b></div></div><button class="btn dark" data-go="results">Показать варианты</button>
+</section>
 
-  <section id="results" class="screen">
-    <h2>Подходящие варианты</h2>
-    <p class="sub">7 программ по вашим условиям</p>
-    <div class="card orange" data-go="uni">
-      <h3>СПбГИКиТ</h3>
-      <p>Журналистика · Телевидение</p>
-      <div class="row">
-        <div><span class="meta">Бюджет</span><br><b>есть</b></div>
-        <div><span class="meta">Стоимость</span><br><b>от 283 000 ₽</b></div>
-      </div>
-    </div>
-    <div class="card">
-      <h3>ТГУ</h3><p>Журналистика</p>
-    </div>
-    <div class="card">
-      <h3>УрФУ</h3><p>Журналистика</p>
-    </div>
-    <button class="btn secondary">Сравнить выбранные</button>
-  </section>
+<section id="results" class="screen"><div class="split"><div><p class="eyebrow">Подбор</p><h2>7 вариантов</h2></div><button class="iconbtn" data-go="picker">⚙</button></div><p class="muted">Показываем программы, а не абстрактный рейтинг вузов.</p>
+ <div class="card press accent" data-go="uni"><div class="split"><div><p class="eyebrow">Санкт-Петербург</p><h3>СПбГИКиТ</h3><p>Журналистика · Телевидение</p></div><div class="arrow">→</div></div><div class="row"><div class="stat"><span class="label">Стоимость</span><b>от 283k</b></div><div class="stat"><span class="label">ДВИ</span><b>2</b></div></div></div>
+ <div class="card press" data-toast="Карточка ТГУ будет наполнена позже"><p class="eyebrow">Томск</p><h3>ТГУ</h3><p class="muted">Журналистика</p></div><div class="card press" data-toast="Карточка УрФУ будет наполнена позже"><p class="eyebrow">Екатеринбург</p><h3>УрФУ</h3><p class="muted">Журналистика</p></div><button class="btn secondary" data-toast="Сравнение будет расширено в следующей итерации">Сравнить выбранные</button>
+</section>
 
-  <section id="uni" class="screen">
-    <h2>СПбГИКиТ</h2>
-    <p class="sub">Санкт-Петербург</p>
-    <div class="card orange">
-      <h3>42.03.02 Журналистика</h3>
-      <p>«Журналистика в медиаиндустрии»</p>
-      <span class="pill">очная · 4 года</span>
-      <div class="score"><span>Бюджет</span><b>6 мест</b></div>
-      <div class="score"><span>Платно</span><b>18 мест</b></div>
-      <div class="score"><span>Стоимость</span><b>283 000 ₽/год</b></div>
-    </div>
-    <div class="card">
-      <h3>Вступительные испытания</h3>
-      <div class="score"><span>Русский</span><b>56+</b></div>
-      <div class="score"><span>Литература</span><b>45+</b></div>
-      <div class="score"><span>Письменная работа</span><b>40+</b></div>
-      <div class="score"><span>Коллоквиум</span><b>40+</b></div>
-    </div>
-    <div class="callout"><b>Проверено MMT</b><br><span class="meta">официальные источники · дата проверки</span></div>
-    <button class="btn" data-go="signup">Добавить в мой план</button>
-    <button class="btn secondary" data-go="prepare">Посмотреть подготовку</button>
-  </section>
+<section id="uni" class="screen"><p class="eyebrow">Санкт-Петербург</p><div class="split"><div><h2>СПбГИКиТ</h2><p class="muted">Институт кино и телевидения</p></div><button class="iconbtn" data-toast="Вуз добавлен в избранное">♡</button></div>
+ <div class="chips"><span class="chip on">Поступление</span><span class="chip" data-go="spbgikit">Подготовка</span><span class="chip" data-go="calendar">Даты</span></div>
+ <div class="card accent"><p class="eyebrow">42.03.02</p><h3>Журналистика в медиаиндустрии</h3><div class="chips"><span class="chip">очная · 4 года</span></div><div class="divider"></div><div class="row"><div class="stat"><span class="label">Бюджет</span><b>6</b></div><div class="stat"><span class="label">Платно</span><b>18</b></div></div><div class="line"><span>Стоимость</span><b>283 000 ₽/год</b></div></div>
+ <div class="card"><h3>Что нужно сдавать</h3><div class="line"><span>Русский язык</span><b>56+</b></div><div class="line"><span>Литература</span><b>45+</b></div><div class="line"><span>Письменная работа</span><b>40+</b></div><div class="line"><span>Коллоквиум</span><b>40+</b></div></div>
+ <div class="source"><div class="seal">✓</div><div><b>Официальные данные</b><div class="small muted">При публикации будет указана дата проверки и ссылка на официальный источник.</div></div></div><button class="btn dark" data-go="signup">Добавить в мой план</button><button class="btn secondary" data-go="spbgikit">Как готовиться сюда</button>
+</section>
 
-  <section id="signup" class="screen">
-    <h2>Сохранить план</h2>
-    <p>Подключите аккаунт, чтобы сохранить вузы, прогресс и календарь.</p>
-    <button class="btn" data-go="home">Продолжить через Telegram</button>
-    <button class="btn ghost" data-go="home">Пока посмотреть демо</button>
-  </section>
+<section id="signup" class="screen"><p class="eyebrow">Сохранение</p><h2>Теперь стоит сохранить план</h2><p class="muted">Аккаунт нужен для выбранных вузов, прогресса, портфолио и календаря.</p><div class="card orange"><h3>Продолжить через Telegram</h3><p>В будущем здесь будет реальное подключение аккаунта и уведомлений.</p></div><button class="btn dark" data-go="profileSetup">Продолжить</button><button class="btn soft" data-go="home">Посмотреть демо без регистрации</button></section>
 
-  <section id="home" class="screen">
-    <p class="label">Ближайшая цель</p>
-    <div class="card orange">
-      <h2>СПбГИКиТ</h2>
-      <p>До ДВИ — 46 дней</p>
-      <div class="kpi">61%</div>
-      <div class="progress"><i style="width:61%"></i></div>
-      <button class="btn" data-go="prepare">Продолжить подготовку</button>
-    </div>
-    <h3>Сегодня</h3>
-    <ul class="list">
-      <li>Новость №8 <span class="meta">· 20 мин</span></li>
-      <li>Российские СМИ <span class="meta">· 10 мин</span></li>
-      <li>СПбГИКиТ: письменная работа <span class="meta">· 30 мин</span></li>
-    </ul>
-    <div class="card" data-go="calendar"><b>10 июля</b><br>Последний день подачи документов</div>
-  </section>
+<section id="profileSetup" class="screen"><p class="eyebrow">Профиль · 1 минута</p><h2>Настроим маршрут</h2><div class="card"><div class="line"><span>Имя</span><b>Ксения</b></div><div class="line"><span>Город</span><b>Омск</b></div><div class="line"><span>Статус</span><b>11 класс</b></div><div class="line"><span>ЕГЭ уже сдавали?</span><b>нет</b></div></div><button class="btn dark" data-go="home">Готово</button></section>
 
-  <section id="prepare" class="screen">
-    <h2>Подготовка</h2>
-    <div class="card orange" data-go="base">
-      <h3>База MMT</h3><p>Журналистика, новости, репортаж, интервью, видео, статья.</p>
-      <div class="progress"><i style="width:74%"></i></div>
-    </div>
-    <div class="card" data-go="dvi">
-      <h3>Навыки ДВИ</h3><p>Эссе, творческий текст, тестирование, собеседование, повестка.</p>
-    </div>
-    <div class="card" data-go="spbgikit">
-      <h3>Мои вузы</h3><p>СПбГИКиТ · готовность 61%</p>
-    </div>
-  </section>
+<section id="home" class="screen"><div class="split"><div><p class="eyebrow">Сегодня</p><h2>Добрый вечер, Ксения</h2></div><span class="protag">MMT Pro</span></div>
+ <div class="card dark"><div class="goalhead"><div><p class="eyebrow" style="color:#aaa">Ближайшая цель</p><h3>СПбГИКиТ</h3></div><div class="days">46 дней</div></div><div class="divider" style="background:#333"></div><div class="split"><div><div class="bigscore">61%</div><div class="small" style="color:#bbb">готовность к ДВИ</div></div><button class="btn" style="width:auto;margin:0" data-go="prepare">Продолжить</button></div></div>
+ <h3 class="topspace">Что сделать сегодня</h3><div class="card"><div class="taskitem"><div class="tasknum">1</div><div><b>Новость №8</b><div class="tasktime">практика базы</div></div><div class="tasktime">20 мин</div></div><div class="taskitem"><div class="tasknum">2</div><div><b>Российские СМИ</b><div class="tasktime">повторение</div></div><div class="tasktime">10 мин</div></div><div class="taskitem"><div class="tasknum">3</div><div><b>Письменная работа</b><div class="tasktime">СПбГИКиТ</div></div><div class="tasktime">30 мин</div></div></div>
+ <div class="card press accent" data-go="calendar"><div class="split"><div><p class="eyebrow">Ближайшая дата</p><h3>10 июля · дедлайн</h3><p class="small muted">Подача документов для сдающих внутренние испытания.</p></div><div class="arrow">→</div></div></div>
+</section>
 
-  <section id="base" class="screen">
-    <h2>База MMT</h2>
-    <ul class="list">
-      <li>✓ Журналистика и медиасреда</li>
-      <li>✓ Новости <span class="meta">8/10</span></li>
-      <li data-go="lesson"><b>→ Репортаж</b></li>
-      <li>Интервью</li>
-      <li>Событийный видеосюжет</li>
-      <li>Тематический видеосюжет</li>
-      <li>Большая статья</li>
-      <li>Портфолио</li>
-      <li>Стажировка</li>
-    </ul>
-  </section>
+<section id="prepare" class="screen"><p class="eyebrow">Учёба</p><h2>Подготовка</h2><p class="muted">Общая журналистская база и специализация под выбранные ДВИ идут параллельно, когда до экзамена мало времени.</p>
+ <div class="card press accent" data-go="base"><div class="split"><div><p class="eyebrow">Уровень А</p><h3>База MMT</h3></div><b>74%</b></div><p class="small muted">Новости, репортаж, интервью, видео, статья, портфолио.</p><div class="progress"><i style="width:74%"></i></div></div>
+ <div class="card press" data-go="dvi"><div class="split"><div><p class="eyebrow">Уровень Б</p><h3>Навыки ДВИ</h3></div><div class="arrow">→</div></div><p class="small muted">Эссе, творческий текст, тесты, устный ответ, повестка.</p></div>
+ <div class="card press" data-go="spbgikit"><div class="split"><div><p class="eyebrow">Уровень В</p><h3>СПбГИКиТ</h3></div><b>61%</b></div><p class="small muted">Подготовка именно к программе и критериям вашего вуза.</p></div>
+</section>
 
-  <section id="lesson" class="screen">
-    <p class="label">Репортаж · урок 1</p>
-    <h2>Как увидеть событие, а не пересказать программу</h2>
-    <p>Короткая теория, примеры, детали наблюдения, работа с героями.</p>
-    <div class="callout"><b>Запомнить:</b> детали, которые журналист увидел сам, отличают репортаж от пересказа пресс-релиза.</div>
-    <button class="btn secondary">Проверить себя</button>
-    <button class="btn" data-go="task">Перейти к заданию</button>
-  </section>
+<section id="base" class="screen"><p class="eyebrow">Уровень А</p><h2>База MMT</h2><p class="muted">Это не строгая лестница: часть практики можно вести параллельно.</p><div class="card">
+ <div class="course done"><div class="courseicon">✓</div><div><b>Журналистика и медиасреда</b><small>основы, источники, жанры</small></div><span>100%</span></div>
+ <div class="course done"><div class="courseicon">✓</div><div><b>Новости</b><small>8 из 10 рекомендуемых работ</small></div><span>85%</span></div>
+ <div class="course now" data-go="lesson"><div class="courseicon">3</div><div><b>Репортаж</b><small>следующий урок</small></div><span>→</span></div>
+ <div class="course"><div class="courseicon">4</div><div><b>Интервью</b><small>теория + реальный герой</small></div><span>→</span></div>
+ <div class="course"><div class="courseicon">5</div><div><b>Событийный видеосюжет</b><small>съёмка события</small></div><span>→</span></div>
+ <div class="course"><div class="courseicon">6</div><div><b>Тематический видеосюжет</b><small>исследование темы</small></div><span>→</span></div>
+ <div class="course"><div class="courseicon">7</div><div><b>Большая статья</b><small>герои + эксперт + данные</small></div><span>→</span></div>
+ <div class="course"><div class="courseicon">8</div><div><b>Портфолио</b><small>собрать сильные работы</small></div><span>→</span></div>
+ <div class="course"><div class="courseicon">9</div><div><b>Стажировка</b><small>выход в редакцию</small></div><span>→</span></div></div>
+</section>
 
-  <section id="task" class="screen">
-    <p class="label">Полевое задание</p>
-    <h2>Сделайте репортаж с реального события</h2>
-    <h3>До события</h3>
-    <div class="check"><span class="dot"></span><span>Изучить тему и программу</span></div>
-    <div class="check"><span class="dot"></span><span>Найти контакты организаторов</span></div>
-    <h3>На месте</h3>
-    <div class="check"><span class="dot"></span><span>Фиксировать детали и реакцию людей</span></div>
-    <div class="check"><span class="dot"></span><span>Получить комментарии</span></div>
-    <h3>После</h3>
-    <div class="check"><span class="dot"></span><span>Проверить факты и написать текст</span></div>
-    <button class="btn" data-go="review">Отправить работу</button>
-  </section>
+<section id="lesson" class="screen"><p class="eyebrow">Репортаж · урок 1</p><h2>Увидеть событие, а не пересказать программу</h2><p class="muted">Уроки будут короткими: одна идея → пример → проверка → практика.</p><div class="card"><h3>Главная мысль</h3><p>Репортаж строится не только на фактах из программы и комментариях организаторов. Читателю нужны детали, сцены и наблюдения, которые журналист увидел на месте сам.</p></div><div class="callout warn"><b>Типичная ошибка</b><p class="small">Три абзаца пресс-релиза до первой живой сцены.</p></div><button class="btn secondary" data-toast="В будущем здесь будет интерактивное упражнение">Проверить себя</button><button class="btn dark" data-go="task">Перейти к практике →</button></section>
 
-  <section id="review" class="screen">
-    <h2>Разбор работы</h2>
-    <div class="kpi">78/100</div>
-    <h3>Получилось хорошо</h3>
-    <div class="check"><span class="dot"></span><span>Есть эффект присутствия</span></div>
-    <div class="check"><span class="dot"></span><span>Комментарии работают на тему</span></div>
-    <h3>Требует доработки</h3>
-    <div class="check"><span class="dot"></span><span>Второй абзац перегружен предысторией</span></div>
-    <div class="callout"><b>Как исправить:</b> перенесите ключевую сцену выше и сократите бэкграунд.</div>
-    <button class="btn">Исправить работу</button>
-    <button class="btn secondary" data-go="prepare">Вернуться к подготовке</button>
-  </section>
+<section id="task" class="screen"><p class="eyebrow">Полевое задание</p><h2>Сделайте репортаж с реального события</h2><p class="muted">Чек-лист превращает методику в рабочий инструмент прямо во время задания.</p><div class="card"><h3>До события</h3><div class="criterion"><i class="bullet"></i><div>Изучить тему и программу</div></div><div class="criterion"><i class="bullet"></i><div>Найти контакты и подготовить вопросы</div></div><div class="divider"></div><h3>На месте</h3><div class="criterion"><i class="bullet"></i><div>Фиксировать детали, сцены и реакцию людей</div></div><div class="criterion"><i class="bullet"></i><div>Получить комментарии</div></div><div class="divider"></div><h3>После</h3><div class="criterion"><i class="bullet"></i><div>Проверить факты и написать материал</div></div></div><button class="btn dark" data-go="submit">Перейти к сдаче</button></section>
 
-  <section id="dvi" class="screen">
-    <h2>Навыки ДВИ</h2>
-    <div class="card"><h3>Эссе</h3><p>Тезис, аргументация, примеры, контраргумент, вывод.</p></div>
-    <div class="card"><h3>Творческий текст</h3><p>Свободный и жанровый режимы.</p></div>
-    <div class="card"><h3>Тестирование</h3><p>Вопросы + работа над ошибками.</p></div>
-    <div class="card"><h3>Собеседование</h3><p>Текстовая симуляция с уточняющими вопросами.</p></div>
-    <div class="card"><h3>Актуальная повестка</h3><p>Главное за неделю и месяц.</p></div>
-  </section>
+<section id="submit" class="screen"><p class="eyebrow">Сдача работы</p><h2>Репортаж №1</h2><div class="searchbox" style="min-height:160px;align-items:flex-start"><span>✎</span><div class="muted">Здесь будет редактор текста с автосохранением черновика…</div></div><button class="btn secondary" data-toast="Черновик сохранён">Сохранить черновик</button><button class="btn dark" data-go="review">Отправить на разбор</button></section>
 
-  <section id="spbgikit" class="screen">
-    <h2>СПбГИКиТ</h2>
-    <div class="kpi">61%</div>
-    <div class="score"><span>Письменная работа</span><b>68%</b></div>
-    <div class="score"><span>Коллоквиум</span><b>55%</b></div>
-    <div class="score"><span>Повестка</span><b>62%</b></div>
-    <div class="score"><span>Портфолио</span><b>78%</b></div>
-    <div class="card orange">
-      <h3>Пробный ДВИ</h3>
-      <p>Экзаменационный режим: таймер, без подсказок, итоговый разбор.</p>
-      <button class="btn">Начать</button>
-    </div>
-  </section>
+<section id="review" class="screen"><p class="eyebrow">Разбор MMT</p><div class="split"><h2>Репортаж №1</h2><div class="bigscore">78</div></div><p class="muted">Оценка — не главное. Важнее понять, что конкретно улучшить в следующей версии.</p><div class="callout good"><b>Получилось</b><div class="criterion"><i class="bullet" style="background:var(--green)"></i><div>Есть эффект присутствия и конкретные наблюдения.</div></div><div class="criterion"><i class="bullet" style="background:var(--green)"></i><div>Комментарии героев работают на тему.</div></div></div><div class="callout warn"><b>Нужно исправить</b><p>Второй абзац перегружен предысторией. Ключевая сцена появляется слишком поздно.</p><b>Что сделать</b><p class="small">Поднимите сцену выше и сократите бэкграунд до фактов, без которых читатель не поймёт происходящее.</p></div><button class="btn dark" data-toast="Открываем редактор второй версии">Исправить работу</button><button class="btn secondary" data-go="base">Вернуться к базе</button></section>
 
-  <section id="portfolio" class="screen">
-    <h2>Моё портфолио</h2>
-    <div class="row">
-      <div class="card"><span class="meta">Учебные</span><div class="kpi">15</div></div>
-      <div class="card"><span class="meta">В СМИ</span><div class="kpi">4</div></div>
-    </div>
-    <ul class="list">
-      <li>Новости <b>10</b></li>
-      <li>Репортаж <b>1</b></li>
-      <li>Интервью <b>1</b></li>
-      <li>Видео <b>2</b></li>
-      <li>Статья <b>1</b></li>
-      <li>Рекомендации <b>1</b></li>
-    </ul>
-    <button class="btn">+ Добавить работу</button>
-    <button class="btn secondary">Подготовить для СПбГИКиТ</button>
-  </section>
+<section id="dvi" class="screen"><p class="eyebrow">Уровень Б</p><h2>Навыки ДВИ</h2><div class="card press" data-toast="Модуль эссе будет наполнен вашими материалами"><div class="split"><div><h3>Эссе</h3><p class="small muted">Тезис, аргументация, примеры, вывод.</p></div><div class="arrow">→</div></div></div><div class="card press" data-toast="Модуль творческого текста будет расширен"><h3>Творческий текст</h3><p class="small muted">Свободный и жанровый режимы.</p></div><div class="card press"><h3>Тестирование</h3><p class="small muted">Вопросы + автоматическая работа над ошибками.</p></div><div class="card press"><h3>Устный ответ</h3><p class="small muted">В v1 — текстовая симуляция с уточняющими вопросами.</p></div><div class="card press"><h3>Актуальная повестка</h3><p class="small muted">Главное за неделю и месяц.</p></div></section>
 
-  <section id="calendar" class="screen">
-    <h2>Календарь поступления</h2>
-    <div class="card orange"><b>10 июля</b><br>СПбГИКиТ · дедлайн документов</div>
-    <div class="card"><b>16 июля</b><br>Письменная работа</div>
-    <div class="card"><b>18 июля</b><br>Коллоквиум</div>
-    <div class="card"><b>25 июля</b><br>Результаты</div>
-    <p class="meta">Даты в wireframe демонстрационные.</p>
-  </section>
+<section id="spbgikit" class="screen"><p class="eyebrow">Мой вуз</p><div class="split"><div><h2>СПбГИКиТ</h2><p class="muted">Готовность к ДВИ</p></div><div class="bigscore">61%</div></div><div class="card"><div class="scoreline"><div><b>Письменная работа</b><div class="mini">жанры и тренировки</div></div><strong>68%</strong></div><div class="scoreline"><div><b>Коллоквиум</b><div class="mini">речь, кругозор, медиа</div></div><strong>55%</strong></div><div class="scoreline"><div><b>Актуальная повестка</b><div class="mini">темы недели и месяца</div></div><strong>62%</strong></div><div class="scoreline"><div><b>Портфолио</b><div class="mini">соответствие требованиям</div></div><strong>78%</strong></div></div><div class="exam"><p class="eyebrow" style="color:#aaa">Пробный экзамен</p><h3>Письменная работа</h3><p class="small" style="color:#bbb">Таймер, случайный набор тем, без подсказок. После завершения — разбор.</p><button class="btn" data-go="mock">Попробовать режим</button></div></section>
 
-  <section id="author" class="screen">
-    <h2>Автор проекта</h2>
-    <div class="card">
-      <h3>Олег Мушков</h3>
-      <p>Журналист · преподаватель журналистики · автор Mushkov Media Team.</p>
-    </div>
-    <div class="card orange">
-      <h3>Индивидуальная подготовка</h3>
-      <p>Количество мест на личную работу ограничено.</p>
-      <button class="btn">Подать заявку</button>
-    </div>
-  </section>
+<section id="mock" class="screen"><p class="eyebrow">Пробный ДВИ · демо</p><div class="exam"><div class="split"><div><h3>СПбГИКиТ</h3><div class="small" style="color:#aaa">Письменная работа</div></div><div class="timer">01:59:42</div></div><div class="divider" style="background:#333"></div><p><b>Выберите одну тему.</b></p><div class="option sel">1. Как меняется роль журналиста в цифровой среде?</div><div class="option">2. Культура большого города: что мы перестаём замечать?</div><div class="option">3. История человека, который изменил привычный маршрут.</div><button class="btn" data-toast="В полной версии откроется редактор экзамена">Начать работу</button></div><div class="callout small">Темы здесь демонстрационные и не являются реальным экзаменационным комплектом.</div></section>
 
-  <section id="profile" class="screen">
-    <h2>Профиль</h2>
-    <div class="score"><span>Город</span><b>Омск</b></div>
-    <div class="score"><span>Класс</span><b>11</b></div>
-    <div class="score"><span>Мои вузы</span><b>3</b></div>
-    <div class="score"><span>MMT Pro</span><b>демо</b></div>
-    <button class="btn secondary" data-go="author">Об авторе</button>
-    <div class="admin">
-      <b>Админка MMT</b>
-      <p class="meta" style="color:#ccc">В реальном продукте — отдельный веб-интерфейс.</p>
-      <button class="btn">Открыть концепт админки</button>
-    </div>
-  </section>
+<section id="portfolio" class="screen"><p class="eyebrow">Мои работы</p><div class="split"><div><h2>Портфолио</h2><p class="muted">Банк растёт вместе с подготовкой.</p></div><button class="iconbtn" data-toast="Добавление работы будет интерактивным">＋</button></div><div class="portfolio-grid"><div class="card"><span class="label">Учебные работы</span><div class="n">15</div></div><div class="card"><span class="label">Публикации в СМИ</span><div class="n">4</div></div><div class="card"><span class="label">Видео / аудио</span><div class="n">2</div></div><div class="card"><span class="label">Рекомендации</span><div class="n">1</div></div></div><div class="card accent"><p class="eyebrow">СПбГИКиТ</p><h3>Портфолио подходит на 78%</h3><p class="small muted">Приложение сможет отбирать сильные материалы под правила конкретного вуза и показывать, чего не хватает.</p><button class="btn secondary" data-toast="Сборка творческой папки появится позже">Подготовить для вуза</button></div><div class="card"><h3>Последние работы</h3><div class="line"><span>Репортаж</span><b>учебная</b></div><div class="line"><span>Видеосюжет</span><b>СМИ</b></div><div class="line"><span>Интервью</span><b>учебная</b></div></div></section>
 
-  <div class="bottom">
-    <div class="nav" data-go="home"><b>⌂</b>Главная</div>
-    <div class="nav" data-go="search"><b>⌕</b>Вузы</div>
-    <div class="nav" data-go="prepare"><b>▶</b>Подготовка</div>
-    <div class="nav" data-go="portfolio"><b>▣</b>Портфолио</div>
-    <div class="nav" data-go="profile"><b>●</b>Профиль</div>
-  </div>
+<section id="calendar" class="screen"><p class="eyebrow">Мои вузы</p><h2>Календарь поступления</h2><p class="muted">Одна лента по всем выбранным программам. Общие экзамены не дублируются.</p><div class="card"><div class="timeline"><div class="event critical"><b>10 июля · дедлайн</b><div class="date">СПбГИКиТ · документы для сдающих внутренние испытания</div></div><div class="event"><b>Июль · письменная работа</b><div class="date">СПбГИКиТ · точная дата будет взята из официального расписания</div></div><div class="event"><b>Июль · коллоквиум</b><div class="date">СПбГИКиТ</div></div><div class="event"><b>27 июля · конкурсные списки</b><div class="date">СПбГИКиТ</div></div><div class="event"><b>5 августа · основное согласие</b><div class="date">СПбГИКиТ</div></div></div></div><div class="callout small"><b>Важно:</b> конкретное расписание экзаменов в прототипе не выдаём за официальное. В продукте каждая дата будет храниться с источником и годом.</div></section>
+
+<section id="author" class="screen"><p class="eyebrow">Mushkov Media Team</p><h2>Автор проекта</h2><div class="card dark"><div class="mark" style="width:62px;height:62px;border-radius:19px;font-size:22px;margin-bottom:16px">MMT</div><h3>Олег Мушков</h3><p style="color:#bbb">Журналист · преподаватель журналистики · автор Mushkov Media Team.</p></div><div class="card accent"><p class="eyebrow">Индивидуальная подготовка</p><h3>Личная работа — отдельно от MMT Pro</h3><p class="small muted">Количество мест ограничено. Вместо бесконечного чата — короткая заявка, после которой преподаватель выбирает учеников.</p><button class="btn dark" data-toast="Форма заявки будет подключена позже">Подать заявку</button></div></section>
+
+<section id="profile" class="screen"><p class="eyebrow">Аккаунт</p><h2>Профиль</h2><div class="card"><div class="line"><span>Имя</span><b>Ксения</b></div><div class="line"><span>Город</span><b>Омск</b></div><div class="line"><span>Статус</span><b>11 класс</b></div><div class="line"><span>Мои вузы</span><b>3</b></div></div><div class="card orange"><div class="split"><div><p class="eyebrow">Подписка</p><h3>MMT Pro</h3></div><b>демо</b></div><p class="small">Полный курс, тренажёры, проверки, вузовские модули и пробные ДВИ.</p></div><div class="card"><div class="line"><span>Критические даты</span><div class="toggle"><i></i></div></div><div class="line"><span>Напоминания об учёбе</span><div class="toggle"><i></i></div></div><div class="line"><span>Тёмная тема</span><b>позже</b></div></div><button class="btn secondary" data-go="author">Об авторе проекта</button></section>
+
+<nav class="bottomnav"><button class="nav" data-tab="home"><span>⌂</span>Главная</button><button class="nav" data-tab="search"><span>⌕</span>Вузы</button><button class="nav" data-tab="prepare"><span>▶</span>Подготовка</button><button class="nav" data-tab="portfolio"><span>▣</span>Портфолио</button><button class="nav" data-tab="profile"><span>●</span>Профиль</button></nav>
+<div class="notice" id="notice"></div>
 </div>
 <script>
-const navStack = ['splash'];
-
-function render(id){
-  document.querySelectorAll('.screen').forEach(x=>x.classList.remove('active'));
-  const s=document.getElementById(id);
-  if(s){
-    s.classList.add('active');
-    window.scrollTo(0,0);
-  }
-  const back = document.getElementById('backBtn');
-  back.style.visibility = navStack.length > 1 ? 'visible' : 'hidden';
-}
-
-function go(id){
-  const current = navStack[navStack.length - 1];
-  if(id !== current) navStack.push(id);
-  render(id);
-}
-
-function goBack(){
-  if(navStack.length > 1){
-    navStack.pop();
-    render(navStack[navStack.length - 1]);
-  }
-}
-
-document.getElementById('backBtn').addEventListener('click', goBack);
-
-document.addEventListener('click',e=>{
-  const t=e.target.closest('[data-go]');
-  if(t) go(t.dataset.go);
-});
+const stack=['splash'];const tabs=['home','search','prepare','portfolio','profile'];
+function render(id){document.querySelectorAll('.screen').forEach(x=>x.classList.remove('active'));const s=document.getElementById(id);if(!s)return;s.classList.add('active');document.getElementById('backBtn').style.visibility=stack.length>1?'visible':'hidden';document.querySelectorAll('.nav').forEach(n=>n.classList.toggle('active',n.dataset.tab===id));window.scrollTo(0,0)}
+function go(id){if(stack[stack.length-1]!==id)stack.push(id);render(id)}
+function back(){if(stack.length>1){stack.pop();render(stack[stack.length-1])}}
+function toast(text){const n=document.getElementById('notice');n.textContent=text;n.classList.add('show');clearTimeout(window.__nt);window.__nt=setTimeout(()=>n.classList.remove('show'),2200)}
+document.getElementById('backBtn').onclick=back;
+document.addEventListener('click',e=>{const g=e.target.closest('[data-go]');if(g){go(g.dataset.go);return}const t=e.target.closest('[data-tab]');if(t){go(t.dataset.tab);return}const z=e.target.closest('[data-toast]');if(z)toast(z.dataset.toast)});render('splash');
 </script>
 </body>
 </html>
