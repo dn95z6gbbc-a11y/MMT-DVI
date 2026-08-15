@@ -35,6 +35,11 @@
                       v010.onload=()=>{
                         const fix=document.createElement('script');
                         fix.src='v010-fix.js?v=0101';
+                        fix.onload=()=>{
+                          const extra=document.createElement('script');
+                          extra.src='v010-extra.js?v=0102';
+                          document.body.appendChild(extra);
+                        };
                         document.body.appendChild(fix);
                       };
                       document.body.appendChild(v010);
