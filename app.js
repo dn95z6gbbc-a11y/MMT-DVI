@@ -27,7 +27,8 @@
     ['v0127.js','0127'],
     ['v0128.js','0128'],
     ['v0129.js','0129'],
-    ['v01210.js','01210']
+    ['v01210.js','01210'],
+    ['v013.js','013']
   ];
 
   window.MMT_MODULES=modules.map(([file,version])=>({file,version}));
@@ -44,7 +45,7 @@
     script.dataset.mmtModule=file;
     script.onload=()=>loadAt(index+1);
     script.onerror=()=>{
-      console.error('[MMT ДВИ] Не удалось загрузить модуль',file);
+      console.error('[MMT ДВИ] Не удалось загрузить часть прототипа',file);
       const toast=document.getElementById('toast');
       if(toast){toast.textContent='Не удалось загрузить часть прототипа. Обновите страницу.';toast.classList.add('show')}
     };
