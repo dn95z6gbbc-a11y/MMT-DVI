@@ -42,10 +42,29 @@
   /* Remove duplicate v0.11 entry cards from old containers when modern bottom nav already leads directly to hubs. */
   ['portfolio2Entry'].forEach(id=>document.getElementById(id)?.remove());
 
-  /* Old static home widgets should point to current features. */
+  /* Home: remove stale campaign/demo widgets that duplicate the v0.10 dispatcher. */
   const home=document.getElementById('home');
   if(home){
     home.querySelectorAll('[data-go="portfolio"]').forEach(el=>el.dataset.go='portfolio2Hub');
+    const oldHero=[...home.querySelectorAll('.card.hero')].find(x=>/ближайшая цель/i.test(x.textContent||''));
+    oldHero?.remove();
+    const staleDate=[...home.querySelectorAll('.metric')].find(x=>/ближайшая дата/i.test(x.textContent||''));
+    staleDate?.closest('.grid2')?.remove();
+    const eye=home.querySelector('.eye');if(eye&&/демо-профиль/i.test(eye.textContent||''))eye.textContent='Мой маршрут';
+  }
+
+  /* Profile: do not present old hard-coded demo city/count as user facts. */
+  const profile=document.getElementById('profile');
+  if(profile){
+    const planned=window.MMT_UNIVERSITIES?Object.values(window.MMT_UNIVERSITIES).filter(u=>!!state[u.stateKey]).length:0;
+    profile.querySelectorAll('.score').forEach(row=>{
+      const label=(row.querySelector('span')?.textContent||'').trim().toLowerCase();
+      const value=row.querySelector('strong');if(!value)return;
+      if(label==='город')value.textContent='не указан';
+      if(label==='статус')value.textContent='не указан';
+      if(label.includes('вузов в плане'))value.textContent=String(planned);
+      if(label.includes('mmt pro'))value.textContent='демо-прототип';
+    });
   }
 
   /* Fields: every visible control gets an explicit purpose. */
