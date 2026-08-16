@@ -1,4 +1,4 @@
-/* MMT ДВИ v0.13.3 — route verdict + choice of next action; year no longer blocks route creation */
+/* MMT ДВИ v0.13.3c — stable route verdict + working navigation */
 (function setupV0133(){
   const UNIS=window.MMT_UNIVERSITIES||{};
   const ver=document.querySelector('.ver');if(ver)ver.textContent='v0.13.3';
@@ -11,7 +11,7 @@
     .v133Verdict{background:#0c0c0c;color:#fff;border-radius:20px;padding:16px;margin:12px 0}.v133Verdict .eye{color:#aaa}.v133Verdict h3{font-size:22px;margin:6px 0}.v133Verdict p{color:#d0d0d0;font-size:13px;line-height:1.48;margin:7px 0 0}
     .v133Reason{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}.v133Reason span{font-size:10px;border:1px solid #ffffff25;background:#ffffff12;border-radius:999px;padding:6px 8px}
     .v133Choices{display:grid;gap:9px;margin:13px 0}.v133Choice{width:100%;border:1px solid var(--line);background:#fff;color:var(--ink);border-radius:18px;padding:15px;text-align:left}.v133Choice.primary{background:var(--o);border-color:var(--o)}.v133Choice b{display:block;font:700 16px/1.25 Montserrat,Arial,sans-serif}.v133Choice span{display:block;color:var(--soft);font-size:12px;line-height:1.4;margin-top:4px}.v133Choice.primary span{color:#4a3024}.v133Choice .arrow{float:right;font-size:19px}
-    .v133Optional{font-size:11px;color:var(--soft);margin-top:5px}.v133SaveOnly{display:block;width:100%;border:0;background:transparent;color:var(--soft);font-size:12px;padding:11px;text-align:center;text-decoration:underline;text-underline-offset:3px}
+    .v133Optional{font-size:11px;color:var(--soft);margin-top:5px}.v133SaveOnly{display:block;width:100%;border:0;background:transparent;color:var(--soft);font-size:12px;padding:13px;text-align:center;text-decoration:underline;text-underline-offset:3px;cursor:pointer}
     #v132Route .v132First{display:none!important}#v132Route [data-v132-finish]{display:none!important}
   `;document.head.appendChild(css);
 
@@ -47,8 +47,16 @@
     const save=document.createElement('button');save.type='button';save.className='v133SaveOnly';save.dataset.v133Action='home';save.textContent='Сохранить маршрут и перейти на Главную';choices.insertAdjacentElement('afterend',save);
   }
 
+  function safeGo(id){
+    try{if(typeof window.go==='function'){window.go(id);return true}}catch(e){console.warn('[MMT v0.13.3] go failed',e)}
+    try{
+      const target=document.getElementById(id);if(!target)return false;
+      document.querySelectorAll('.screen').forEach(x=>x.classList.remove('active'));target.classList.add('active');window.scrollTo(0,0);return true;
+    }catch(e){console.warn('[MMT v0.13.3] fallback navigation failed',e);return false}
+  }
+
   function finalize(target){
-    const ids=new Set(state.v132?.selectedIds||[]);if(!ids.size)return;
+    const ids=new Set(state.v132?.selectedIds||[]);if(!ids.size){if(typeof toast==='function')toast('Сначала выберите хотя бы один вуз');return}
     Object.values(UNIS).forEach(u=>{if(u.stateKey)state[u.stateKey]=ids.has(u.id)});
     state.v13Onboarding=state.v13Onboarding&&typeof state.v13Onboarding==='object'?state.v13Onboarding:{};
     state.v13Onboarding.year=state.v132.year||'';state.v13Onboarding.selectedIds=[...ids];state.v13Onboarding.mode=state.v132.mode;state.v13Onboarding.geo=state.v132.geo;
@@ -57,17 +65,25 @@
     persist();
     document.body.classList.remove('v132-onboarding','v13-onboarding');
     const dock=document.getElementById('mmtBottomDock');if(dock)dock.style.setProperty('display','block','important');
-    if(typeof window.renderV10==='function')window.renderV10();if(typeof window.refresh==='function')window.refresh();
+
     let screen='home';
     if(target==='prepare'&&document.getElementById('prepare'))screen='prepare';
     if(target==='unis')screen=document.getElementById('myUniversities')?'myUniversities':'uniCatalog';
     if(target==='portfolio')screen=document.getElementById('portfolio2Hub')?'portfolio2Hub':'home';
-    if(typeof window.go==='function')window.go(screen);
-    if(typeof toast==='function')toast('Маршрут сохранён');
+
+    const moved=safeGo(screen);
+    setTimeout(()=>{
+      try{if(typeof window.renderV10==='function')window.renderV10()}catch(e){console.warn('[MMT v0.13.3] renderV10 after navigation failed',e)}
+      try{if(typeof window.refresh==='function')window.refresh()}catch(e){console.warn('[MMT v0.13.3] refresh after navigation failed',e)}
+      if(moved&&typeof toast==='function')toast('Маршрут сохранён');
+    },0);
   }
 
   document.addEventListener('click',e=>{const b=e.target.closest('[data-v133-action]');if(!b)return;e.preventDefault();e.stopImmediatePropagation();finalize(b.dataset.v133Action)},true);
-  new MutationObserver(()=>requestAnimationFrame(upgrade)).observe(route,{childList:true,subtree:false});
-  document.addEventListener('click',e=>{if(e.target.closest('[data-v132-year]'))setTimeout(upgrade,0)},true);
+
+  /* Rebuild verdict only after the base route page itself is rendered, never because our own DOM changed. */
+  document.addEventListener('click',e=>{
+    if(e.target.closest('[data-v132-route]')||e.target.closest('[data-v132-year]'))setTimeout(upgrade,0);
+  },false);
   upgrade();
 })();
