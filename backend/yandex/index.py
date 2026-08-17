@@ -30,27 +30,30 @@ SYSTEM_PROMPT = r"""
 Твоя задача — не написать материал вместо ученика и не придумывать факты. Нужно проверить связи между полями карточки.
 Если ответ бессмысленный, не отвечает на вопрос, противоречит другим полям, является слухом или источник неочевидно компетентен — скажи это прямо.
 Если данных недостаточно, проси конкретно дособрать фактуру, а не фантазируй.
+Не хвали поле только за заполненность.
 
 Верни ТОЛЬКО валидный JSON без Markdown и без текста до/после него в формате:
 {
   "verdict": "можно собирать дальше" | "нужно дособрать" | "нельзя использовать как есть",
   "summary": "краткий итог в 1-3 предложениях",
-  "items": [
+  "issues": [
     {
       "criterion": "название критерия",
-      "status": "ok" | "warn" | "bad",
-      "problem": "что именно увидел; для ok — что работает",
+      "severity": "critical" | "important" | "note",
+      "problem": "что именно не так или что требует внимания",
       "why": "почему это важно журналисту",
-      "what_to_verify": "что проверить или дособрать; пустая строка, если ничего",
-      "next_action": "одно конкретное действие ученика"
+      "whatToVerify": "что проверить или дособрать",
+      "nextAction": "одно конкретное действие ученика"
     }
   ],
-  "strengths": ["не более 3 реально подтверждаемых сильных сторон"],
-  "priority": ["не более 3 правок в порядке важности"]
+  "strengths": ["не более 3 действительно работающих сильных сторон"],
+  "questionsForStudent": ["не более 4 точных редакторских вопросов ученику"]
 }
 
 Обязательно проверь: инфоповод; логическую согласованность полей; компетентность источника; факт/мнение/слух/предположение; неподтверждённые обвинения; комментарий; бэкграунд; язык.
-Не хвали поле за одну лишь заполненность.
+Если проблема делает ключевой факт непригодным до подтверждения, severity=critical.
+Если материал можно спасти уточнением, severity=important.
+Неблокирующее замечание — note.
 """.strip()
 
 
@@ -119,26 +122,26 @@ def _validate_review(review: Any) -> Dict[str, Any]:
     if verdict not in allowed_verdicts:
         verdict = "нужно дособрать"
 
-    clean_items = []
-    for item in review.get("items") or []:
+    clean_issues = []
+    for item in review.get("issues") or []:
         if not isinstance(item, dict):
             continue
-        status = item.get("status") if item.get("status") in {"ok", "warn", "bad"} else "warn"
-        clean_items.append({
+        severity = item.get("severity") if item.get("severity") in {"critical", "important", "note"} else "important"
+        clean_issues.append({
             "criterion": str(item.get("criterion") or "Редакторская проверка")[:120],
-            "status": status,
+            "severity": severity,
             "problem": str(item.get("problem") or "")[:1200],
             "why": str(item.get("why") or "")[:1200],
-            "what_to_verify": str(item.get("what_to_verify") or "")[:1200],
-            "next_action": str(item.get("next_action") or "")[:1200],
+            "whatToVerify": str(item.get("whatToVerify") or "")[:1200],
+            "nextAction": str(item.get("nextAction") or "")[:1200],
         })
 
     return {
         "verdict": verdict,
         "summary": str(review.get("summary") or "")[:1800],
-        "items": clean_items[:12],
+        "issues": clean_issues[:12],
         "strengths": [str(x)[:500] for x in (review.get("strengths") or []) if str(x).strip()][:3],
-        "priority": [str(x)[:500] for x in (review.get("priority") or []) if str(x).strip()][:3],
+        "questionsForStudent": [str(x)[:700] for x in (review.get("questionsForStudent") or []) if str(x).strip()][:4],
     }
 
 
@@ -187,7 +190,12 @@ def handler(event, context):
         )
         content = completion.choices[0].message.content or "{}"
         review = _validate_review(json.loads(_clean_json_text(content)))
-        return _response(200, {"ok": True, "provider": "yandex", "review": review}, origin)
+        model_version = getattr(completion, "model", "") or MODEL_NAME
+        return _response(200, {
+            "ok": True,
+            "review": review,
+            "meta": {"provider": "yandex", "modelVersion": model_version},
+        }, origin)
     except json.JSONDecodeError:
         return _response(502, {"ok": False, "error": "invalid_model_json"}, origin)
     except Exception as exc:
