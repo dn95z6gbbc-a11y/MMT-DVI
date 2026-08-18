@@ -57,7 +57,7 @@
   }
   function renderLoading(){
     const p=ensurePanel();if(!p)return;
-    p.innerHTML='<div class="meta">Смысловая проверка</div><h2>Редакторский разбор</h2><div class="ai142State loading"><span class="ai142Spinner"></span><b>Редактор читает всю карточку целиком…</b><br>Проверяем логику фактуры, источник, слухи и предположения, комментарий, бэкграунд и язык.</div>';
+    p.innerHTML='<div class="meta">Смысловая проверка</div><h2>Редакторский разбор</h2><div class="ai142State loading"><span class="ai142Spinner"></span><b>Редактор читает всю карточку целиком…</b><br>После калибровки подробный разбор может занять до полутора минут. Проверяем логику фактуры, источник, слухи и предположения, комментарий, бэкграунд и язык.</div>';
     try{p.scrollIntoView({behavior:'smooth',block:'nearest'})}catch(e){}
   }
   function renderError(message){
@@ -78,14 +78,14 @@
     if(!item||!packet){renderError('Не удалось собрать текущую карточку фактуры.');window.MMT_AI_REVIEW_IN_FLIGHT=false;return}
     window.MMT_AI_144_IN_FLIGHT=true;renderLoading();
     try{
-      const controller=new AbortController();const timer=setTimeout(()=>controller.abort(),45000);
+      const controller=new AbortController();const timer=setTimeout(()=>controller.abort(),90000);
       const r=await fetch(ENDPOINT,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({packet}),signal:controller.signal,cache:'no-store'});clearTimeout(timer);
       let data=null;try{data=await r.json()}catch(e){}
       if(!r.ok||!data?.ok||!data?.review)throw new Error(data?.message||data?.error||`Ошибка сервера ${r.status}`);
       state.v144AiReviews[item.id]={at:new Date().toISOString(),review:data.review,meta:data.meta||{}};persist();
       renderResult(data.review,data.meta||{});
     }catch(e){
-      const msg=e?.name==='AbortError'?'AI-проверка заняла слишком много времени. Повторите запрос.':(e?.message||'Сетевая ошибка при обращении к AI.');
+      const msg=e?.name==='AbortError'?'AI-проверка не успела завершиться за 90 секунд. Повторите запрос.':(e?.message||'Сетевая ошибка при обращении к AI.');
       renderError(msg);
     }finally{
       window.MMT_AI_144_IN_FLIGHT=false;
