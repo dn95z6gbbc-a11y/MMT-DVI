@@ -63,23 +63,24 @@
     go('reportType152');
   }
 
-  function typeSummary(type){const i=typeInfo[type];return `<div class="rep152Summary" id="rep152TypeSummary"><div class="rep152SummaryHead"><div><span class="rep152Badge">Выбран тип</span><br><b>${i.title}</b></div><button type="button" class="rep152Change" data-rep152-change>Изменить</button></div><div style="margin-top:6px">${i.influence}</div></div>`}
-
-  function labelFor(el,text){const f=el?.closest('.rep150Field');const l=f?.querySelector('label');if(l)l.textContent=text}
-  function replaceCheck(screen,key,text){const input=screen?.querySelector(`[data-rep150-prep-check="${key}"],[data-rep150-field-check="${key}"],[data-rep150-draft-check="${key}"]`);const label=input?.closest('label');if(label){const nodes=[...label.childNodes].filter(n=>n.nodeType===Node.TEXT_NODE);nodes.forEach(n=>n.remove());label.append(document.createTextNode(text))}}
+  function typeSummary(type){const i=typeInfo[type];return `<div class="rep152Summary" id="rep152TypeSummary" data-rep152-summary-type="${type}"><div class="rep152SummaryHead"><div><span class="rep152Badge">Выбран тип</span><br><b>${i.title}</b></div><button type="button" class="rep152Change" data-rep152-change>Изменить</button></div><div style="margin-top:6px">${i.influence}</div></div>`}
+  function setHTML(el,html){if(el&&el.innerHTML!==html)el.innerHTML=html}
+  function labelFor(el,text){const f=el?.closest('.rep150Field');const l=f?.querySelector('label');if(l&&l.textContent.trim()!==text.trim())l.textContent=text}
+  function replaceCheck(screen,key,text){const input=screen?.querySelector(`[data-rep150-prep-check="${key}"],[data-rep150-field-check="${key}"],[data-rep150-draft-check="${key}"]`);const label=input?.closest('label');if(label&&label.textContent.trim()!==text.trim()){[...label.childNodes].filter(n=>n.nodeType===Node.TEXT_NODE).forEach(n=>n.remove());label.append(document.createTextNode(text))}}
 
   function patchPrepContext(){
     const s=document.getElementById('reportPrep150');if(!s||!s.innerHTML)return;
     const type=selected();if(!type)return;
     const hero=s.querySelector('.rep150StageHero');
-    let sum=s.querySelector('#rep152TypeSummary');if(!sum&&hero){hero.insertAdjacentHTML('afterend',typeSummary(type));sum=s.querySelector('#rep152TypeSummary')}
-    else if(sum){sum.outerHTML=typeSummary(type)}
+    let sum=s.querySelector('#rep152TypeSummary');
+    if(!sum&&hero){hero.insertAdjacentHTML('afterend',typeSummary(type));sum=s.querySelector('#rep152TypeSummary')}
+    else if(sum&&sum.dataset.rep152SummaryType!==type){sum.outerHTML=typeSummary(type)}
 
     const old=s.querySelector('#rep151PrepExtra');
-    if(old){const h=old.querySelector('h3');if(h)h.textContent='Доступ и согласование';const typeField=old.querySelector('[data-rep151-type]')?.closest('.rep150Field');if(typeField)typeField.style.display='none'}
+    if(old){const h=old.querySelector('h3');if(h&&h.textContent!=='Доступ и согласование')h.textContent='Доступ и согласование';const typeField=old.querySelector('[data-rep151-type]')?.closest('.rep150Field');if(typeField&&typeField.style.display!=='none')typeField.style.display='none'}
 
     let ctx=s.querySelector('#rep152PrepContext');if(!ctx&&hero){ctx=document.createElement('div');ctx.id='rep152PrepContext';ctx.className='rep152Context';hero.after(ctx)}
-    if(ctx)ctx.innerHTML=`<b>${typeInfo[type].title}: что меняется в подготовке</b>${typeInfo[type].prep}`;
+    setHTML(ctx,`<b>${typeInfo[type].title}: что меняется в подготовке</b>${typeInfo[type].prep}`);
 
     const eventName=s.querySelector('[data-rep150-prep="eventName"]');
     const dateTime=s.querySelector('[data-rep150-prep="dateTime"]');
@@ -105,13 +106,13 @@
       labelFor(obs,'Какие сцены, процессы, рутины, детали или контрасты важно заметить?');
       replaceCheck(s,'real','Это реальная тема, место или среда, а не придуманная ситуация.');
       replaceCheck(s,'attend','Я действительно собираюсь работать на месте лично, а не собирать материал только дистанционно.');
-      const toField=s.querySelector('[data-rep150-to-field]');if(toField)toField.textContent='Я уже собрал(а) материал на месте →';
+      const toField=s.querySelector('[data-rep150-to-field]');if(toField&&toField.textContent!=='Я уже собрал(а) материал на месте →')toField.textContent='Я уже собрал(а) материал на месте →';
     }
   }
 
   function patchFieldContext(){
     const s=document.getElementById('reportField150');if(!s||!s.innerHTML)return;const type=selected();if(!type)return;
-    const hero=s.querySelector('.rep150StageHero');let ctx=s.querySelector('#rep152FieldContext');if(!ctx&&hero){ctx=document.createElement('div');ctx.id='rep152FieldContext';ctx.className='rep152Context';hero.after(ctx)}if(ctx)ctx.innerHTML=`<b>${typeInfo[type].title}: что собирать</b>${typeInfo[type].field}`;
+    const hero=s.querySelector('.rep150StageHero');let ctx=s.querySelector('#rep152FieldContext');if(!ctx&&hero){ctx=document.createElement('div');ctx.id='rep152FieldContext';ctx.className='rep152Context';hero.after(ctx)}setHTML(ctx,`<b>${typeInfo[type].title}: что собирать</b>${typeInfo[type].field}`);
     const what=s.querySelector('[data-rep150-field="whatHappened"]');const opening=s.querySelector('[data-rep150-field="openingScene"]');const ending=s.querySelector('[data-rep150-field="ending"]');
     if(type==='event'){
       labelFor(what,'Что произошло от начала до конца?');labelFor(opening,'Какая реальная сцена сильнее всего вводит в событие?');labelFor(ending,'Чем событие закончилось или что изменилось к финалу?');
@@ -124,7 +125,7 @@
 
   function patchDraftContext(){
     const s=document.getElementById('reportDraft150');if(!s||!s.innerHTML)return;const type=selected();if(!type)return;
-    const hero=s.querySelector('.rep150StageHero');let ctx=s.querySelector('#rep152DraftContext');if(!ctx&&hero){ctx=document.createElement('div');ctx.id='rep152DraftContext';ctx.className='rep152Context';hero.after(ctx)}if(ctx)ctx.innerHTML=`<b>${typeInfo[type].title}: как собирать текст</b>${typeInfo[type].draft}`;
+    const hero=s.querySelector('.rep150StageHero');let ctx=s.querySelector('#rep152DraftContext');if(!ctx&&hero){ctx=document.createElement('div');ctx.id='rep152DraftContext';ctx.className='rep152Context';hero.after(ctx)}setHTML(ctx,`<b>${typeInfo[type].title}: как собирать текст</b>${typeInfo[type].draft}`);
     replaceCheck(s,'eventClear',type==='event'?'Понятно, что это за событие, где и когда оно происходит.':'Понятно, какую тему раскрывает репортаж, где и когда журналист работал на месте.');
     replaceCheck(s,'ending',type==='event'?'Есть естественное завершение события, а не искусственная мораль.':'Есть естественное завершение темы или последняя значимая сцена, а не искусственная мораль.');
   }
@@ -132,7 +133,7 @@
   function patchHub(){
     const hub=document.getElementById('reportCourse150');if(!hub||!hub.innerHTML)return;
     const work=hub.querySelector('.rep150Work');if(work&&!work.querySelector('.rep152HubNote')){const p=document.createElement('div');p.className='rep152HubNote rep150Hint';p.style.marginTop='7px';p.textContent='Перед планом выхода выберите тип: событийный или тематический. От этого изменятся подсказки для сбора материала и сборки текста.';work.querySelector('p')?.after(p)}
-    const b=hub.querySelector('[data-rep150-open-work]');if(b&&!R.prep.typeConfirmed152&&!workStarted())b.textContent='Выбрать тип и начать →';
+    const b=hub.querySelector('[data-rep150-open-work]');if(b&&!R.prep.typeConfirmed152&&!workStarted()&&b.textContent!=='Выбрать тип и начать →')b.textContent='Выбрать тип и начать →';
   }
 
   function patchAll(){patchHub();patchPrepContext();patchFieldContext();patchDraftContext()}
