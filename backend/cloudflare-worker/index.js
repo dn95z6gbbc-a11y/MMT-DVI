@@ -163,9 +163,18 @@ function cleanPacket(input) {
 
 function extractText(result) {
   if (!result) return "";
+
   if (typeof result.response === "string") return result.response;
-  if (result.choices?.[0]?.message && typeof result.choices[0].message.content === "string") return result.choices[0].message.content;
-  if (result.result && typeof result.result.response === "string") return result.result.response;
+  if (result.response && typeof result.response === "object") return JSON.stringify(result.response);
+
+  const message = result.choices?.[0]?.message;
+  if (typeof message?.content === "string") return message.content;
+  if (message?.content && typeof message.content === "object") return JSON.stringify(message.content);
+  if (message?.parsed && typeof message.parsed === "object") return JSON.stringify(message.parsed);
+
+  if (typeof result.result?.response === "string") return result.result.response;
+  if (result.result?.response && typeof result.result.response === "object") return JSON.stringify(result.result.response);
+
   return "";
 }
 
