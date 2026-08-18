@@ -3,7 +3,7 @@
    New shared features should use MMT_UNIVERSITIES and state instead of duplicating data. */
 (function(){
   const modules=[
-    ['mmt-config.js','config0142a'],
+    ['mmt-config.js','config0143'],
     ['app-v042.js','042'],
     ['v05.js','050'],
     ['v051.js','052'],
@@ -41,7 +41,8 @@
     ['v0139.js','0139'],
     ['v0140.js','0140'],
     ['v0141.js','0141'],
-    ['v0142.js','0142']
+    ['v0142.js','0142'],
+    ['v0143.js','0143']
   ];
 
   window.MMT_MODULES=modules.map(([file,version])=>({file,version}));
