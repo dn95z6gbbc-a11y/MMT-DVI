@@ -133,7 +133,7 @@
   function patchHub(){
     const hub=document.getElementById('reportCourse150');if(!hub||!hub.innerHTML)return;
     const work=hub.querySelector('.rep150Work');if(work&&!work.querySelector('.rep152HubNote')){const p=document.createElement('div');p.className='rep152HubNote rep150Hint';p.style.marginTop='7px';p.textContent='Перед планом выхода выберите тип: событийный или тематический. От этого изменятся подсказки для сбора материала и сборки текста.';work.querySelector('p')?.after(p)}
-    const b=hub.querySelector('[data-rep150-open-work]');if(b&&!R.prep.typeConfirmed152&&!workStarted()&&b.textContent!=='Выбрать тип и начать →')b.textContent='Выбрать тип и начать →';
+    const b=hub.querySelector('[data-rep150-open-work]');if(b&&!R.prep.typeConfirmed152){const label=workStarted()?'Выбрать тип и продолжить →':'Выбрать тип и начать →';if(b.textContent!==label)b.textContent=label}
   }
 
   function patchAll(){patchHub();patchPrepContext();patchFieldContext();patchDraftContext()}
@@ -141,7 +141,7 @@
   let bypass=false;
   document.addEventListener('click',e=>{
     const open=e.target.closest('[data-rep150-open-work]');
-    if(open&&!bypass&&!workStarted()&&!R.prep.typeConfirmed152){e.preventDefault();e.stopImmediatePropagation();renderTypeScreen();return}
+    if(open&&!bypass&&!R.prep.typeConfirmed152){e.preventDefault();e.stopImmediatePropagation();renderTypeScreen();return}
     const change=e.target.closest('[data-rep152-change]');if(change){e.preventDefault();renderTypeScreen();return}
     const t=e.target.closest('[data-rep152-type]');if(t){e.preventDefault();R.prep.reportType=t.dataset.rep152Type;persist();renderTypeScreen();return}
     if(e.target.closest('[data-rep152-back]')){e.preventDefault();const hub=document.getElementById('reportCourse150');if(hub)go('reportCourse150');return}
