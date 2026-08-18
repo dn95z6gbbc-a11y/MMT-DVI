@@ -1,7 +1,7 @@
-/* MMT ДВИ v0.14.5 — robust AI trigger fallback */
+/* MMT ДВИ v0.14.6 — robust AI trigger fallback + extended review timeout */
 (function setupV0145(){
-  const ver=document.querySelector('.ver');if(ver)ver.textContent='v0.14.5';
-  document.title='MMT ДВИ — v0.14.5';
+  const ver=document.querySelector('.ver');if(ver)ver.textContent='v0.14.6';
+  document.title='MMT ДВИ — v0.14.6';
 
   let queued=false;
   function scheduleRun(delay=650){
@@ -15,7 +15,7 @@
           window.MMT_AI_REVIEW_V144.run();
         }
       }catch(e){
-        console.error('[MMT v0.14.5] AI run failed',e);
+        console.error('[MMT v0.14.6] AI run failed',e);
         window.MMT_AI_REVIEW_IN_FLIGHT=false;
       }
     },delay);
@@ -26,12 +26,10 @@
     return !!(btn&&btn.closest('#newsOwn137')&&/проверить\s+фактуру/i.test(btn.textContent||''));
   }
 
-  /* pointerdown fires before the legacy click chain, so old handlers cannot swallow the AI trigger */
   document.addEventListener('pointerdown',e=>{
     if(isFactCheckButton(e.target))scheduleRun(700);
   },true);
 
-  /* Touch fallback for older mobile browsers. */
   document.addEventListener('touchstart',e=>{
     if(isFactCheckButton(e.target))scheduleRun(700);
   },{capture:true,passive:true});
