@@ -43,8 +43,8 @@
     ['v0141.js','0141'],
     ['v0142.js','0142'],
     ['v0143.js','0143'],
-    ['v0144.js','0144'],
-    ['v0145.js','0145']
+    ['v0144.js','0146'],
+    ['v0145.js','0146']
   ];
 
   window.MMT_MODULES=modules.map(([file,version])=>({file,version}));
