@@ -49,7 +49,7 @@
     ['v015.js','0150'],
     ['v0151.js','0151'],
     ['v0152.js','0152'],
-    ['v016.js','0160'],
+    ['v016.js','0160fix2'],
     ['v0162.js','0162'],
     ['v0163.js','0163b']
   ];
@@ -66,8 +66,25 @@
     const script=document.createElement('script');
     script.src=file+'?v='+version;
     script.dataset.mmtModule=file;
-    script.onload=()=>loadAt(index+1);
+
+    const NativeMutationObserver=window.MutationObserver;
+    let observerSuppressed=false;
+    if(file==='v016.js' && NativeMutationObserver){
+      observerSuppressed=true;
+      window.MutationObserver=class {
+        constructor(callback){this.callback=callback}
+        observe(){}
+        disconnect(){}
+        takeRecords(){return[]}
+      };
+    }
+    const restoreObserver=()=>{
+      if(observerSuppressed){window.MutationObserver=NativeMutationObserver;observerSuppressed=false}
+    };
+
+    script.onload=()=>{restoreObserver();loadAt(index+1)};
     script.onerror=()=>{
+      restoreObserver();
       console.error('[MMT ДВИ] Не удалось загрузить часть прототипа',file);
       const toast=document.getElementById('toast');
       if(toast){toast.textContent='Не удалось загрузить часть прототипа. Обновите страницу.';toast.classList.add('show')}
