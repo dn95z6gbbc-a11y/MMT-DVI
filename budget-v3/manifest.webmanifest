@@ -1,0 +1,16 @@
+{
+  "name": "Личный бюджет v3",
+  "short_name": "Бюджет",
+  "description": "Личный бюджет: быстрые доходы и расходы, платежи по дням, план и помощник.",
+  "lang": "ru",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#F1F3F0",
+  "theme_color": "#1B2A25",
+  "icons": [
+    {"src":"../budget/icons/icon-192.png","sizes":"192x192","type":"image/png","purpose":"any"},
+    {"src":"../budget/icons/icon-512.png","sizes":"512x512","type":"image/png","purpose":"any"},
+    {"src":"../budget/icons/icon-maskable-512.png","sizes":"512x512","type":"image/png","purpose":"maskable"}
+  ]
+}
