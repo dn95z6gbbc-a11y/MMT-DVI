@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#1B2A25">
+<title>Личный бюджет v3</title>
+<style>
+:root{--bg:#F1F3F0;--card:#FBFCFA;--text:#1B2A25;--muted:#6C7671;--line:#D4D9D3;--green:#2F6F5B;--red:#A63D2F;--ochre:#8A6A28;--blue:#355C7D;--softg:#EAF2EE;--softr:#F8ECE9;--softo:#F4F0E4;--softb:#EAF0F5;--shadow:0 8px 24px rgba(27,42,37,.05)}
+*{box-sizing:border-box}html,body{margin:0;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;font-variant-numeric:tabular-nums}button,input,select,textarea{font:inherit;color:inherit}button{cursor:pointer}.app{max-width:1180px;margin:auto;padding:22px}header{display:flex;justify-content:space-between;gap:16px;align-items:flex-end;margin-bottom:16px}.brand h1{font:700 clamp(28px,5vw,44px)/1 Georgia,serif;margin:0 0 6px}.brand p{margin:0;color:var(--muted);line-height:1.4}.saved{font-size:12px;color:var(--muted)}nav{display:flex;gap:7px;overflow:auto;padding-bottom:4px;margin-bottom:18px}.tab{white-space:nowrap;border:1px solid var(--line);background:rgba(251,252,250,.8);padding:9px 14px;border-radius:999px}.tab.active{background:var(--text);color:#fff;border-color:var(--text)}.screen{display:none}.screen.active{display:block}.card{background:var(--card);border:1px solid var(--line);border-radius:18px;box-shadow:var(--shadow);padding:18px}.home-top{display:grid;grid-template-columns:1.1fr .9fr;gap:14px}.balance-card{padding:22px}.eyebrow{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}.balance{font:700 clamp(38px,7vw,64px)/1 Georgia,serif;margin:8px 0 12px}.balance-actions{display:flex;gap:8px;flex-wrap:wrap}.btn{border:1px solid var(--line);background:#fff;border-radius:12px;padding:10px 13px}.btn.income{background:var(--softg);border-color:#cfe0d8;color:var(--green);font-weight:700}.btn.expense{background:var(--softr);border-color:#ecd0cb;color:var(--red);font-weight:700}.btn.primary{background:var(--green);border-color:var(--green);color:#fff;font-weight:700}.btn.danger{color:var(--red);border-color:#e4bdb7}.date-card{display:flex;flex-direction:column;justify-content:space-between}.date-row{display:flex;gap:8px;align-items:center}.date-row input{width:100%}.situation{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:14px}.mini{border:1px solid var(--line);border-radius:14px;padding:12px;background:#fff}.mini span{display:block;font-size:12px;color:var(--muted);margin-bottom:6px}.mini b{font:700 21px/1.05 Georgia,serif}.today-card{margin-top:14px}.today-head{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;margin-bottom:10px}.today-head h2{font:700 26px/1.1 Georgia,serif;margin:0}.day-list{display:flex;flex-direction:column}.day-item{display:grid;grid-template-columns:1fr auto;gap:12px;padding:12px 0;border-top:1px solid #e5e8e4}.day-item:first-child{border-top:0}.day-item strong{display:block}.day-item small{color:var(--muted);display:block;margin-top:3px}.money{white-space:nowrap;font-weight:700}.plus{color:var(--green)}.minus{color:var(--red)}.zero{color:var(--muted)}.empty{color:var(--muted);padding:18px 0}.grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px}.section-title{font:700 28px/1.1 Georgia,serif;margin:0 0 6px}.section-sub{color:var(--muted);margin:0 0 14px}.table-wrap{overflow:auto;border:1px solid var(--line);border-radius:16px;background:var(--card)}table{border-collapse:collapse;width:100%;min-width:760px}th,td{padding:10px 11px;border-bottom:1px solid #e5e8e4;text-align:left;vertical-align:top}th{font-size:12px;color:var(--muted);background:#f7f8f6;position:sticky;top:0}td.num,th.num{text-align:right;white-space:nowrap}.badge{display:inline-block;border-radius:999px;padding:4px 8px;font-size:11px;background:#eef0ed;color:var(--muted)}.badge.fixed{background:var(--softb);color:var(--blue)}.badge.variable{background:var(--softo);color:var(--ochre)}.badge.other{background:var(--softg);color:var(--green)}.cat-actions{display:flex;gap:6px}.micro{border:1px solid var(--line);background:#fff;border-radius:8px;padding:5px 7px;font-size:11px}.toolbar{display:flex;justify-content:space-between;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:14px}.toolbar-actions{display:flex;gap:8px;flex-wrap:wrap}.metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px}.metric{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:13px}.metric span{display:block;color:var(--muted);font-size:12px;margin-bottom:6px}.metric b{font:700 22px/1 Georgia,serif}.notice{background:#fff;border:1px solid var(--line);border-radius:14px;padding:12px 14px;color:var(--muted);line-height:1.45;margin-bottom:14px}.chat-log{min-height:220px;max-height:360px;overflow:auto;background:#fff;border:1px solid var(--line);border-radius:14px;padding:12px}.msg{max-width:86%;padding:10px 12px;border-radius:13px;margin:6px 0;line-height:1.4;white-space:pre-wrap}.msg.user{background:var(--text);color:#fff;margin-left:auto}.msg.bot{background:#eef1ed}.chat-row{display:grid;grid-template-columns:1fr auto;gap:8px;margin-top:10px}.chips{display:flex;gap:7px;flex-wrap:wrap;margin:10px 0}.chip{border:1px solid var(--line);background:#fff;border-radius:999px;padding:7px 10px;font-size:12px}.file-actions{display:flex;gap:8px;flex-wrap:wrap}input,select,textarea{border:1px solid var(--line);background:#fff;border-radius:10px;padding:9px 10px;outline:none}input:focus,select:focus,textarea:focus{border-color:#94aaa1;box-shadow:0 0 0 3px rgba(47,111,91,.08)}.modal-bg{display:none;position:fixed;inset:0;background:rgba(20,30,26,.45);z-index:100;align-items:center;justify-content:center;padding:14px}.modal-bg.open{display:flex}.modal{width:min(620px,100%);max-height:92vh;overflow:auto;background:var(--card);border:1px solid var(--line);border-radius:20px;padding:18px;box-shadow:0 24px 80px rgba(0,0,0,.2)}.modal-head{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}.modal-head h3{font:700 26px/1 Georgia,serif;margin:0}.close{border:1px solid var(--line);background:#fff;border-radius:10px;width:38px;height:38px;font-size:20px}.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:11px;margin-top:16px}.field{display:flex;flex-direction:column;gap:5px}.field.full{grid-column:1/-1}.field label{font-size:12px;color:var(--muted)}.inline-check{display:flex;gap:8px;align-items:center}.inline-check input{width:18px;height:18px}.modal-actions{display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap;margin-top:16px}.hidden{display:none!important}.right{margin-left:auto}.money-note{font-size:12px;color:var(--muted);margin-top:8px}.plan-month{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:12px}.plan-month .metric{min-height:86px}
+@media(max-width:860px){.home-top,.grid2{grid-template-columns:1fr}.metrics,.situation,.plan-month{grid-template-columns:1fr 1fr}.app{padding:14px}header{align-items:flex-start;flex-direction:column}.saved{display:none}}
+@media(max-width:520px){.metrics,.situation,.plan-month{grid-template-columns:1fr}.balance-card{padding:18px}.form-grid{grid-template-columns:1fr}.field.full{grid-column:auto}.chat-row{grid-template-columns:1fr}.toolbar-actions{width:100%}.toolbar-actions .btn{flex:1}.day-item{grid-template-columns:1fr auto}}
+</style>
+</head>
+<body>
+<div class="app">
+<header><div class="brand"><h1>Личный бюджет</h1><p>Сначала — что происходит с деньгами сегодня. План и настройки отдельно.</p></div><div class="saved" id="savedState">Сохранено локально</div></header>
+<nav id="tabs">
+<button class="tab active" data-screen="home">Главная</button>
+<button class="tab" data-screen="history">История</button>
+<button class="tab" data-screen="plan">План</button>
+<button class="tab" data-screen="categories">Категории</button>
+<button class="tab" data-screen="assistant">Помощник</button>
+<button class="tab" data-screen="file">Файл</button>
+</nav>
+
+<section class="screen active" id="screen-home">
+  <div class="home-top">
+    <div class="card balance-card">
+      <div class="eyebrow">Сейчас у меня</div>
+      <div class="balance" id="balanceValue">0 ₽</div>
+      <div class="balance-actions">
+        <button class="btn income" id="quickIncome">+ Доход</button>
+        <button class="btn expense" id="quickExpense">− Расход</button>
+        <button class="btn" id="editBalance">Изменить остаток</button>
+      </div>
+      <div class="money-note" id="balanceNote"></div>
+    </div>
+    <div class="card date-card">
+      <div>
+        <div class="eyebrow">Выбранный день</div>
+        <div class="date-row"><button class="btn" id="prevDay">‹</button><input type="date" id="homeDate"><button class="btn" id="nextDay">›</button></div>
+      </div>
+      <div class="situation" id="situation"></div>
+    </div>
+  </div>
+  <div class="card today-card">
+    <div 
