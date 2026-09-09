@@ -5,9 +5,10 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>MMT V-CHECK</title>
 <style>html,body{margin:0;width:100%;height:100%;background:#f4f6fa}iframe{border:0;width:100%;height:100%;display:block}</style>
+<script src="https://cdn.jsdelivr.net/npm/html2pdf.js@0.10.1/dist/html2pdf.bundle.min.js"></script>
 </head>
 <body>
-<iframe id="app" src="./index.html?v=5" title="MMT V-CHECK"></iframe>
+<iframe id="app" src="./index.html?v=6" title="MMT V-CHECK"></iframe>
 <script>
 const API_URL='https://functions.yandexcloud.net/d4ejdq5v5too7egeop63';
 const MAX_FILE_BYTES=100*1024*1024;
@@ -20,6 +21,7 @@ const frame=document.getElementById('app');
 frame.addEventListener('load',()=>{
   const w=frame.contentWindow,d=frame.contentDocument;
   const $=id=>d.getElementById(id);
+  const originalCheck=w.check;
 
   const tag=d.querySelector('.hero .tag');
   if(tag) tag.textContent='Сначала V‑CHECK. Потом — преподаватель.';
@@ -53,7 +55,7 @@ frame.addEventListener('load',()=>{
   $('format')?.addEventListener('change',setAiPlaceholder);
 
   const aiBox=d.querySelector('.ai-box');
-  if(aiBox) aiBox.innerHTML='<b>Одна кнопка — две проверки</b>После нажатия «Проверить материал» приложение сверяет измеримые требования и безопасно загружает файл во временное хранилище для содержательного ИИ-анализа. Максимум — 100 МБ и 2 проверки в сутки.';
+  if(aiBox) aiBox.innerHTML='<b>Одна кнопка — две проверки</b>После нажатия «Проверить материал» приложение сначала сверяет измеримые требования, затем YandexGPT читает текст статьи и проверяет содержание по требованиям формата. Максимум файла — 100 МБ, максимум — 2 проверки в сутки.';
 
   const extraStyle=d.createElement('style');
   extraStyle.textContent=`
@@ -63,6 +65,11 @@ frame.addEventListener('load',()=>{
     #uploadStatus.error{display:block;background:#fff1f2;border:1px solid #fecdd3;color:#881337}
     #uploadStatus b{font-weight:850}
     button[data-uploading="1"]{opacity:.7;cursor:wait}
+    #aiResult{border:1px solid #c7d2fe;background:#eef2ff;color:#312e81;border-radius:17px;padding:16px 18px;margin:10px 0}
+    #aiResult h3{margin:0 0 8px;font-size:18px}
+    #aiResult ul{margin:8px 0;padding-left:20px}
+    #aiResult li{margin:7px 0}
+    .ai-ok{color:#166534}.ai-warning{color:#854d0e}.ai-problem{color:#9f1239}.ai-unknown{color:#475569}
   `;
   d.head.appendChild(extraStyle);
 
@@ -78,9 +85,7 @@ frame.addEventListener('load',()=>{
 
   function updateLimitCopy(){
     const hint=materialBox?.querySelector('.hint');
-    if(hint&&hint.textContent.includes('400 МБ')){
-      hint.textContent=hint.textContent.replace('400 МБ','100 МБ');
-    }
+    if(hint&&hint.textContent.includes('400 МБ')) hint.textContent=hint.textContent.replace('400 МБ','100 МБ');
   }
   updateLimitCopy();
   if(materialBox){
@@ -110,29 +115,83 @@ frame.addEventListener('load',()=>{
     if(raw&&typeof raw.body==='string'){
       try{data=JSON.parse(raw.body)}catch(_){data=raw;}
     }
-    if(!response.ok&&data?.ok!==false){
-      throw new Error('Не удалось связаться с сервером проверки.');
-    }
     return data;
   }
 
   async function releaseReservation(fullName,groupValue,reservationId,quotaDate){
     if(!reservationId||!quotaDate)return;
     try{
-      await callApi({
-        action:'cancelUpload',
-        fullName,
-        group:groupValue,
-        reservationId,
-        quotaDate
-      });
-    }catch(_){/* safety-net lifecycle will remove stale markers */}
+      await callApi({action:'cancelUpload',fullName,group:groupValue,reservationId,quotaDate});
+    }catch(_){ }
+  }
+
+  async function extractText(file){
+    if(!file)return '';
+    if(/\.docx$/i.test(file.name)){
+      const ab=await file.arrayBuffer();
+      const r=await w.mammoth.extractRawText({arrayBuffer:ab});
+      return String(r?.value||'').trim();
+    }
+    if(/\.(txt|md)$/i.test(file.name)||file.type==='text/plain') return (await file.text()).trim();
+    return '';
+  }
+
+  function removeArticleUpperLimitViolation(){
+    if($('format')?.value!=='article')return;
+    const bad=$('bad');
+    if(!bad)return;
+    const items=[...bad.querySelectorAll('li')];
+    for(const li of items){
+      if(/Объём текста .*требуется 6000–9000/.test(li.textContent||'')) li.remove();
+    }
+    const remaining=[...bad.querySelectorAll('li')].length;
+    const badTitle=bad.querySelector('b');
+    if(badTitle) badTitle.textContent=`Не соблюдено · ${remaining}`;
+    const title=$('reportTitle');
+    if(title) title.textContent=remaining?`Найдено нарушений: ${remaining}`:'Формальных нарушений не найдено';
+    const final=$('final');
+    if(final) final.textContent=remaining?`Найдено ${remaining} нарушений. Исправьте их перед сдачей.`:'Формальные требования соблюдены. Ниже — содержательная проверка ИИ.';
+  }
+
+  function aiLabel(status){
+    return status==='ok'?'Соблюдено':status==='warning'?'Нужно внимание':status==='problem'?'Проблема':'Не удалось определить';
+  }
+
+  function renderAiAnalysis(analysis){
+    const report=$('report');
+    const final=$('final');
+    if(!report||!analysis)return;
+    d.getElementById('aiResult')?.remove();
+    const box=d.createElement('div');
+    box.id='aiResult';
+    box.innerHTML='<h3>Содержательная проверка ИИ</h3>';
+    const ul=d.createElement('ul');
+    const entries=Object.entries(analysis||{});
+    for(const [key,value] of entries){
+      const li=d.createElement('li');
+      if(value&&typeof value==='object'&&!Array.isArray(value)){
+        const status=String(value.status||'unknown').toLowerCase();
+        const evidence=value.evidence||value.comment||value.explanation||value.details||value.found||'';
+        li.className=`ai-${['ok','warning','problem','unknown'].includes(status)?status:'unknown'}`;
+        li.innerHTML=`<b>${escapeHtml(key)}</b> — ${aiLabel(status)}${evidence?`: ${escapeHtml(Array.isArray(evidence)?evidence.join(', '):evidence)}`:''}`;
+      }else{
+        li.innerHTML=`<b>${escapeHtml(key)}</b>: ${escapeHtml(typeof value==='string'?value:JSON.stringify(value))}`;
+      }
+      ul.appendChild(li);
+    }
+    box.appendChild(ul);
+    if(final) final.before(box); else report.appendChild(box);
+  }
+
+  function escapeHtml(s){
+    return String(s??'').replace(/[&<>\"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
   }
 
   const form=$('form');
   const submitButton=form?.querySelector('button[type="submit"]');
   let uploading=false;
 
+  // Перехватываем отправку раньше старого обработчика index.html.
   form?.addEventListener('submit',async e=>{
     e.preventDefault();
     e.stopImmediatePropagation();
@@ -140,28 +199,16 @@ frame.addEventListener('load',()=>{
 
     const fullName=$('name')?.value.trim()||'';
     const groupValue=$('group')?.value||'';
-    const fileInput=$('materialFile');
-    const file=fileInput?.files?.[0];
+    const formatValue=$('format')?.value||'';
+    const file=$('materialFile')?.files?.[0];
 
-    // Сначала сохраняем привычную локальную формальную проверку и отчёт.
-    if(typeof w.check==='function') w.check();
+    if(typeof originalCheck==='function') originalCheck();
+    removeArticleUpperLimitViolation();
 
-    if(fullName.length<4){
-      setStatus('error','<b>Укажите имя и фамилию.</b> Без них система не сможет посчитать дневной лимит.');
-      return;
-    }
-    if(!groupValue){
-      setStatus('error','<b>Выберите группу.</b> Без группы система не сможет посчитать дневной лимит.');
-      return;
-    }
-    if(!file){
-      setStatus('error','<b>Загрузите готовый материал.</b> Поддерживаемый тип файла зависит от выбранного формата.');
-      return;
-    }
-    if(file.size>MAX_FILE_BYTES){
-      setStatus('error','<b>Файл больше 100 МБ.</b> Он не отправлен и попытка не потрачена.');
-      return;
-    }
+    if(fullName.length<4){setStatus('error','<b>Укажите имя и фамилию.</b>');return;}
+    if(!groupValue){setStatus('error','<b>Выберите группу.</b>');return;}
+    if(!file){setStatus('error','<b>Загрузите готовый материал.</b>');return;}
+    if(file.size>MAX_FILE_BYTES){setStatus('error','<b>Файл больше 100 МБ.</b> Он не отправлен и попытка не потрачена.');return;}
 
     uploading=true;
     if(submitButton){
@@ -170,54 +217,47 @@ frame.addEventListener('load',()=>{
       submitButton.dataset.oldText=submitButton.textContent;
       submitButton.textContent='Подготавливаем проверку…';
     }
-    setStatus('info','<b>Подготавливаем защищённую загрузку…</b> Не закрывайте страницу.');
 
     let reservationId='',quotaDate='',uploaded=false;
     try{
       const contentType=file.type||'application/octet-stream';
-      const created=await callApi({
-        action:'createUpload',
-        fullName,
-        group:groupValue,
-        fileName:file.name,
-        fileSize:file.size,
-        contentType
-      });
-
+      setStatus('info','<b>Подготавливаем защищённую загрузку…</b>');
+      const created=await callApi({action:'createUpload',fullName,group:groupValue,fileName:file.name,fileSize:file.size,contentType});
       if(!created?.ok){
-        if(created?.error==='daily_limit'){
-          setStatus('error',`<b>На сегодня использованы обе проверки.</b> Новые попытки будут доступны после 00:00 по Москве.`);
-          return;
-        }
-        if(created?.error==='file_too_large'){
-          setStatus('error','<b>Файл больше 100 МБ.</b> Он не отправлен и попытка не потрачена.');
-          return;
-        }
+        if(created?.error==='daily_limit'){setStatus('error','<b>На сегодня использованы обе проверки.</b> Новые попытки будут доступны после 00:00 по Москве.');return;}
+        if(created?.error==='file_too_large'){setStatus('error','<b>Файл больше 100 МБ.</b> Он не отправлен и попытка не потрачена.');return;}
         throw new Error(created?.message||'Не удалось подготовить загрузку.');
       }
 
       reservationId=created.reservationId;
       quotaDate=created.quotaDate;
       if(submitButton) submitButton.textContent='Загружаем файл…';
-      setStatus('info',`<b>Загружаем ${file.name}</b> во временное защищённое хранилище…`);
-
-      const putResponse=await fetch(created.uploadUrl,{
-        method:'PUT',
-        headers:created.uploadHeaders||{'Content-Type':contentType},
-        body:file
-      });
+      setStatus('info',`<b>Загружаем ${escapeHtml(file.name)}</b> во временное защищённое хранилище…`);
+      const putResponse=await fetch(created.uploadUrl,{method:'PUT',headers:created.uploadHeaders||{'Content-Type':contentType},body:file});
       if(!putResponse.ok) throw new Error(`Хранилище вернуло ошибку ${putResponse.status}.`);
       uploaded=true;
 
-      const remaining=Number.isFinite(created.remainingToday)?created.remainingToday:null;
-      setStatus('ok',remaining===null
-        ?'<b>Файл загружен.</b> Транспортный слой V‑CHECK работает; следующим шагом подключаем содержательный ИИ-анализ.'
-        :`<b>Файл загружен.</b> На сегодня осталось проверок: <b>${remaining}</b>. Следующим шагом подключаем содержательный ИИ-анализ.`);
-    }catch(err){
-      if(!uploaded&&reservationId){
-        await releaseReservation(fullName,groupValue,reservationId,quotaDate);
+      if(FORMAT_TYPES[formatValue]==='text'){
+        if(submitButton) submitButton.textContent='ИИ читает материал…';
+        setStatus('info','<b>Файл загружен. YandexGPT читает текст и проверяет содержание…</b> Обычно это занимает несколько секунд.');
+        const text=await extractText(file);
+        if(!text) throw new Error('Не удалось извлечь текст из файла для ИИ-проверки.');
+        const ai=await callApi({action:'analyzeText',text});
+        if(!ai?.ok) throw new Error(ai?.message||'ИИ-анализ не завершён.');
+        renderAiAnalysis(ai.analysis||{});
+        const remaining=Number.isFinite(created.remainingToday)?created.remainingToday:null;
+        setStatus('ok',remaining===null
+          ?'<b>Проверка завершена.</b> Формальный и содержательный результаты собраны в отчёте.'
+          :`<b>Проверка завершена.</b> На сегодня осталось проверок: <b>${remaining}</b>.`);
+      }else{
+        const remaining=Number.isFinite(created.remainingToday)?created.remainingToday:null;
+        setStatus('ok',remaining===null
+          ?'<b>Файл загружен.</b> Для аудио и видео содержательный ИИ-анализ подключим следующим этапом.'
+          :`<b>Файл загружен.</b> На сегодня осталось проверок: <b>${remaining}</b>. Для аудио и видео содержательный ИИ-анализ подключим следующим этапом.`);
       }
-      setStatus('error',`<b>Загрузка не завершена.</b> ${err?.message||'Попробуйте ещё раз.'} ${!uploaded?'Попытка возвращена.':''}`);
+    }catch(err){
+      if(!uploaded&&reservationId) await releaseReservation(fullName,groupValue,reservationId,quotaDate);
+      setStatus('error',`<b>Проверка не завершена.</b> ${escapeHtml(err?.message||'Попробуйте ещё раз.')}${!uploaded?' Попытка возвращена.':''}`);
     }finally{
       uploading=false;
       if(submitButton){
@@ -229,9 +269,22 @@ frame.addEventListener('load',()=>{
     }
   },true);
 
-  form?.addEventListener('reset',()=>{
-    setTimeout(()=>setStatus('',''),0);
-  });
+  // Более надёжный PDF: рендерим копию отчёта вне iframe.
+  $('pdf')?.addEventListener('click',async e=>{
+    e.preventDefault();
+    e.stopImmediatePropagation();
+    const report=$('pdfArea');
+    if(!report)return;
+    const host=document.createElement('div');
+    host.style.cssText='position:fixed;left:-10000px;top:0;width:794px;background:#fff;padding:24px;color:#111827;font:15px/1.45 Arial,sans-serif;';
+    host.innerHTML=report.innerHTML;
+    document.body.appendChild(host);
+    try{
+      await html2pdf().set({margin:8,filename:'MMT-V-CHECK.pdf',image:{type:'jpeg',quality:.96},html2canvas:{scale:2,useCORS:true},jsPDF:{unit:'mm',format:'a4',orientation:'portrait'}}).from(host).save();
+    }finally{host.remove();}
+  },true);
+
+  form?.addEventListener('reset',()=>setTimeout(()=>{setStatus('','');d.getElementById('aiResult')?.remove();},0));
 });
 </script>
 </body>
