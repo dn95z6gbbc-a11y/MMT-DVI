@@ -7,33 +7,231 @@
 <style>html,body{margin:0;width:100%;height:100%;background:#f4f6fa}iframe{border:0;width:100%;height:100%;display:block}</style>
 </head>
 <body>
-<iframe id="app" src="./index.html?v=4" title="MMT V-CHECK"></iframe>
+<iframe id="app" src="./index.html?v=5" title="MMT V-CHECK"></iframe>
 <script>
+const API_URL='https://functions.yandexcloud.net/d4ejdq5v5too7egeop63';
+const MAX_FILE_BYTES=100*1024*1024;
+const FORMAT_TYPES={
+  article:'text',report_event:'text',report_theme:'text',interview:'text',profile:'text',factcheck:'text',
+  story_event:'video',story_theme:'video',street:'video',hot:'video',live:'video',podcast:'audio'
+};
+
 const frame=document.getElementById('app');
 frame.addEventListener('load',()=>{
   const w=frame.contentWindow,d=frame.contentDocument;
   const $=id=>d.getElementById(id);
+
   const tag=d.querySelector('.hero .tag');
   if(tag) tag.textContent='Сначала V‑CHECK. Потом — преподаватель.';
+
   const privacy=d.querySelector('.privacy div');
   if(privacy) privacy.innerHTML='<b>Проверка идёт в два слоя.</b><br>Формальные параметры проверяются автоматически. Для содержательного ИИ-анализа материал временно обрабатывается российскими сервисами и после проверки удаляется.';
+
   const group=$('group');
   if(group) group.innerHTML='<option value="">— выберите группу —</option><option>Ж501-311</option><option>Ж502-311</option><option>Ж503-311</option>';
+
   const old=$('aiElement');
   if(old&&old.tagName==='SELECT'){
     const input=d.createElement('input');
-    input.id='aiElement'; input.type='text'; input.autocomplete='off';
+    input.id='aiElement';
+    input.type='text';
+    input.autocomplete='off';
     old.replaceWith(input);
   }
+
   function setAiPlaceholder(){
-    const el=$('aiElement'),fmt=$('format'); if(!el||!fmt)return;
-    const type=w.FORMATS?.[fmt.value]?.type;
-    el.placeholder=type==='text'?'Например: инфографика по собственным данным, схема или таймлайн':type==='audio'?'Например: джингл, музыкальная перебивка или синтезированный голос':'Например: музыкальная подложка, инфографика, схема или синтезированный голос';
+    const el=$('aiElement'),fmt=$('format');
+    if(!el||!fmt)return;
+    const type=FORMAT_TYPES[fmt.value]||'video';
+    el.placeholder=type==='text'
+      ?'Например: инфографика по собственным данным, схема или таймлайн'
+      :type==='audio'
+        ?'Например: джингл, музыкальная перебивка или синтезированный голос'
+        :'Например: музыкальная подложка, инфографика, схема или синтезированный голос';
   }
   setAiPlaceholder();
   $('format')?.addEventListener('change',setAiPlaceholder);
+
   const aiBox=d.querySelector('.ai-box');
-  if(aiBox) aiBox.innerHTML='<b>Одна кнопка — две проверки</b>После нажатия «Проверить материал» приложение сначала сверяет измеримые требования, затем запускает содержательный ИИ-анализ по инструктажу выбранного формата. Для студентов это будет один процесс без VPN и без перехода в сторонние сервисы.';
+  if(aiBox) aiBox.innerHTML='<b>Одна кнопка — две проверки</b>После нажатия «Проверить материал» приложение сверяет измеримые требования и безопасно загружает файл во временное хранилище для содержательного ИИ-анализа. Максимум — 100 МБ и 2 проверки в сутки.';
+
+  const extraStyle=d.createElement('style');
+  extraStyle.textContent=`
+    #uploadStatus{display:none;margin-top:14px;border-radius:14px;padding:12px 14px;font-size:14px;line-height:1.45}
+    #uploadStatus.info{display:block;background:#eff6ff;border:1px solid #bfdbfe;color:#1e3a8a}
+    #uploadStatus.ok{display:block;background:#f0fdf4;border:1px solid #bbf7d0;color:#14532d}
+    #uploadStatus.error{display:block;background:#fff1f2;border:1px solid #fecdd3;color:#881337}
+    #uploadStatus b{font-weight:850}
+    button[data-uploading="1"]{opacity:.7;cursor:wait}
+  `;
+  d.head.appendChild(extraStyle);
+
+  const materialBox=$('materialBox');
+  const uploadStatus=d.createElement('div');
+  uploadStatus.id='uploadStatus';
+  if(materialBox) materialBox.after(uploadStatus);
+
+  function setStatus(kind,html){
+    uploadStatus.className=kind||'';
+    uploadStatus.innerHTML=html||'';
+  }
+
+  function updateLimitCopy(){
+    const hint=materialBox?.querySelector('.hint');
+    if(hint&&hint.textContent.includes('400 МБ')){
+      hint.textContent=hint.textContent.replace('400 МБ','100 МБ');
+    }
+  }
+  updateLimitCopy();
+  if(materialBox){
+    new MutationObserver(updateLimitCopy).observe(materialBox,{childList:true,subtree:true});
+    materialBox.addEventListener('change',e=>{
+      if(e.target?.id!=='materialFile')return;
+      const file=e.target.files?.[0];
+      if(!file){setStatus('','');return;}
+      if(file.size>MAX_FILE_BYTES){
+        setStatus('error','<b>Файл больше 100 МБ.</b> Сожмите его и выберите заново. Такой файл не будет отправлен и не потратит попытку.');
+      }else{
+        setStatus('info',`Файл готов к проверке: <b>${(file.size/1048576).toFixed(1)} МБ</b>. Лимит — 100 МБ.`);
+      }
+    });
+  }
+
+  async function callApi(payload){
+    const response=await fetch(API_URL,{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify(payload),
+      cache:'no-store'
+    });
+    let raw={};
+    try{raw=await response.json()}catch(_){throw new Error('Сервер вернул непонятный ответ. Попробуйте ещё раз.');}
+    let data=raw;
+    if(raw&&typeof raw.body==='string'){
+      try{data=JSON.parse(raw.body)}catch(_){data=raw;}
+    }
+    if(!response.ok&&data?.ok!==false){
+      throw new Error('Не удалось связаться с сервером проверки.');
+    }
+    return data;
+  }
+
+  async function releaseReservation(fullName,groupValue,reservationId,quotaDate){
+    if(!reservationId||!quotaDate)return;
+    try{
+      await callApi({
+        action:'cancelUpload',
+        fullName,
+        group:groupValue,
+        reservationId,
+        quotaDate
+      });
+    }catch(_){/* safety-net lifecycle will remove stale markers */}
+  }
+
+  const form=$('form');
+  const submitButton=form?.querySelector('button[type="submit"]');
+  let uploading=false;
+
+  form?.addEventListener('submit',async e=>{
+    e.preventDefault();
+    e.stopImmediatePropagation();
+    if(uploading)return;
+
+    const fullName=$('name')?.value.trim()||'';
+    const groupValue=$('group')?.value||'';
+    const fileInput=$('materialFile');
+    const file=fileInput?.files?.[0];
+
+    // Сначала сохраняем привычную локальную формальную проверку и отчёт.
+    if(typeof w.check==='function') w.check();
+
+    if(fullName.length<4){
+      setStatus('error','<b>Укажите имя и фамилию.</b> Без них система не сможет посчитать дневной лимит.');
+      return;
+    }
+    if(!groupValue){
+      setStatus('error','<b>Выберите группу.</b> Без группы система не сможет посчитать дневной лимит.');
+      return;
+    }
+    if(!file){
+      setStatus('error','<b>Загрузите готовый материал.</b> Поддерживаемый тип файла зависит от выбранного формата.');
+      return;
+    }
+    if(file.size>MAX_FILE_BYTES){
+      setStatus('error','<b>Файл больше 100 МБ.</b> Он не отправлен и попытка не потрачена.');
+      return;
+    }
+
+    uploading=true;
+    if(submitButton){
+      submitButton.disabled=true;
+      submitButton.dataset.uploading='1';
+      submitButton.dataset.oldText=submitButton.textContent;
+      submitButton.textContent='Подготавливаем проверку…';
+    }
+    setStatus('info','<b>Подготавливаем защищённую загрузку…</b> Не закрывайте страницу.');
+
+    let reservationId='',quotaDate='',uploaded=false;
+    try{
+      const contentType=file.type||'application/octet-stream';
+      const created=await callApi({
+        action:'createUpload',
+        fullName,
+        group:groupValue,
+        fileName:file.name,
+        fileSize:file.size,
+        contentType
+      });
+
+      if(!created?.ok){
+        if(created?.error==='daily_limit'){
+          setStatus('error',`<b>На сегодня использованы обе проверки.</b> Новые попытки будут доступны после 00:00 по Москве.`);
+          return;
+        }
+        if(created?.error==='file_too_large'){
+          setStatus('error','<b>Файл больше 100 МБ.</b> Он не отправлен и попытка не потрачена.');
+          return;
+        }
+        throw new Error(created?.message||'Не удалось подготовить загрузку.');
+      }
+
+      reservationId=created.reservationId;
+      quotaDate=created.quotaDate;
+      if(submitButton) submitButton.textContent='Загружаем файл…';
+      setStatus('info',`<b>Загружаем ${file.name}</b> во временное защищённое хранилище…`);
+
+      const putResponse=await fetch(created.uploadUrl,{
+        method:'PUT',
+        headers:created.uploadHeaders||{'Content-Type':contentType},
+        body:file
+      });
+      if(!putResponse.ok) throw new Error(`Хранилище вернуло ошибку ${putResponse.status}.`);
+      uploaded=true;
+
+      const remaining=Number.isFinite(created.remainingToday)?created.remainingToday:null;
+      setStatus('ok',remaining===null
+        ?'<b>Файл загружен.</b> Транспортный слой V‑CHECK работает; следующим шагом подключаем содержательный ИИ-анализ.'
+        :`<b>Файл загружен.</b> На сегодня осталось проверок: <b>${remaining}</b>. Следующим шагом подключаем содержательный ИИ-анализ.`);
+    }catch(err){
+      if(!uploaded&&reservationId){
+        await releaseReservation(fullName,groupValue,reservationId,quotaDate);
+      }
+      setStatus('error',`<b>Загрузка не завершена.</b> ${err?.message||'Попробуйте ещё раз.'} ${!uploaded?'Попытка возвращена.':''}`);
+    }finally{
+      uploading=false;
+      if(submitButton){
+        submitButton.disabled=false;
+        delete submitButton.dataset.uploading;
+        submitButton.textContent=submitButton.dataset.oldText||'Проверить материал';
+        delete submitButton.dataset.oldText;
+      }
+    }
+  },true);
+
+  form?.addEventListener('reset',()=>{
+    setTimeout(()=>setStatus('',''),0);
+  });
 });
 </script>
 </body>
