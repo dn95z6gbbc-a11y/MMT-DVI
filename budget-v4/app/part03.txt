@@ -1,0 +1,41 @@
+iv>
+  </section>
+
+  <section class="screen" id="screen-plan">
+    <div class="toolbar"><div><h1>План</h1><p>Доходы, обязательные статьи и переменные ориентиры на месяц.</p></div><select id="planMonth" class="date-input"></select></div>
+    <div class="kpis" id="planMetrics"></div>
+    <div class="grid2"><div class="panel"><div class="panel-title"><h3>Доходы</h3></div><div class="list" id="planIncome"></div></div><div class="panel"><div class="panel-title"><h3>Расходы</h3></div><div class="list" id="planExpense"></div></div></div>
+  </section>
+
+  <section class="screen" id="screen-assistant">
+    <div class="toolbar"><div><h1>Финансовый помощник</h1><p>Он получает цифры из приложения, различает факт, план, плавающие статьи и гипотезы.</p></div></div>
+    <div class="ai-layout">
+      <div class="panel ai-context"><div class="ai-orb">✦</div><h2>Контекст бюджета</h2><p>Помощник не отвечает «в среднем»: перед ответом он строит денежный сценарий по датам.</p><div class="context-stack" id="assistantContext"></div><div class="ai-status" id="aiStatus"><i></i><span>Умный локальный анализ</span></div></div>
+      <div class="panel chat-panel">
+        <div class="chips"><button class="chip" data-q="Сколько отложить на квартиру 15 сентября, если аванс будет 26 000?">Квартира 15 сентября</button><button class="chip" data-q="Хватит ли мне денег до 15 сентября?">Хватит до 15-го?</button><button class="chip" data-q="Что мне обязательно оплатить в ближайшие 14 дней?">Ближайшие платежи</button><button class="chip" data-q="Сколько уже ушло на продукты и обеды?">Продукты и обеды</button></div>
+        <div class="chat-log" id="chatLog"><div class="msg-wrap"><div class="msg bot">Спроси что угодно про цифры. Например: «сколько отложить на квартиру 15 сентября, если аванс будет 26 000?»</div><div class="msg-meta">Помощник видит текущий остаток, даты и статьи</div></div></div>
+        <div class="chat-input"><textarea id="chatInput" placeholder="Напиши вопрос про деньги…"></textarea><button class="send" id="chatSend">↑</button></div><div class="ai-foot">На GitHub Pages работает встроенный расчётный движок. При развёртывании на Vercel тот же контекст передаётся GPT‑5.6 через защищённый серверный маршрут.</div>
+      </div>
+    </div>
+  </section>
+
+  <section class="screen" id="screen-more">
+    <div class="toolbar"><div><h1>Ещё</h1><p>Постоянные статьи, данные и технические настройки.</p></div></div>
+    <div class="more-grid">
+      <div class="panel"><div class="panel-title"><div><h3>Постоянные статьи</h3><p>Фиксированные даты, окна оплаты и переменные категории.</p></div><button class="btn green" id="addCategory">+ Статья</button></div><div class="table-wrap" id="categoriesTable"></div></div>
+      <div class="panel"><div class="section-label">Данные</div><div class="setting"><div><b>Резервная копия</b><small>Сохраняет остаток, операции, статьи и план.</small></div><button class="btn" id="downloadJson">Скачать JSON</button></div><div class="setting"><div><b>Импорт</b><small>Можно вернуть данные из v3/v4.</small></div><input type="file" id="uploadJson" accept=".json,application/json"></div><div class="setting"><div><b>ИИ endpoint</b><small>Оставь пустым для локального режима. На Vercel используется /api/budget-assistant.</small></div><input id="aiEndpoint" placeholder="https://…/api/budget-assistant"></div><div class="setting"><div><b>Сброс</b><small>Вернуть исходные данные v4.</small></div><button class="btn danger" id="resetAll">Сбросить</button></div></div>
+    </div>
+  </section>
+</div>
+
+<nav class="bottom-nav" id="bottomNav">
+<button class="active" data-screen="home"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V21h14V9.5"/></svg>Главная</button>
+<button data-screen="history"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M4 12h16M4 18h10"/></svg>История</button>
+<button data-screen="plan"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19V9m6 10V5m6 14v-7m4 7H2"/></svg>План</button>
+<button data-screen="assistant"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3l1.8 4.7L18.5 9.5l-4.7 1.8L12 16l-1.8-4.7L5.5 9.5l4.7-1.8L12 3Z"/><path d="M19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8L19 15Z"/></svg>ИИ</button>
+<button data-screen="more"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="5" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/></svg>Ещё</button>
+</nav>
+
+<div class="modal-bg" id="txModal"><div class="modal"><div class="modal-head"><div><h3 id="txTitle">Добавить расход</h3></div><button class="close" data-close="txModal">×</button></div><form id="txForm"><input type="hidden" id="txId"><div class="form-grid"><div class="field"><label>Тип</label><select id="txKind"><option value="expense">Расход</option><option value="income">Доход</option></select></div><div class="field"><label>Сумма, ₽</label><input id="txAmount" type="number" min="0" step="1" required></div><div class="field"><label>Дата</label><input id="txDate" type="date" required></div><div class="field"><label>Категория</label><select id="txCategory"></select></div><div class="field full"><label>Что именно</label><input id="txName" required placeholder="Например, Перекрёсток / обед / бензин"></div><div class="field full"><label class="inline-check"><input id="txPaidByOther" type="checkbox"> Оплатил другой человек — не уменьшать мой остаток</label></div><div class="field full"><label class="inline-check"><input id="txMakeRecurring" type="checkbox"> Сделать новой постоянной статьёй</label></div><div class="field hidden" id="recNameField"><label>Название статьи</label><input id="recName"></div><div class="field hidden" id="recScheduleField"><label>Когда</label><select id="recSchedule"><option value="variable">без фиксированной даты</option><option value="fixed">конкретное число</option><option value="range">окно дат</option><option value="floating">плавающая дата</option></select></div><div class="field hidden" id="recDayField"><label>Число месяца</label><input id="recDay" type="number" min="1" max="31"></div><div class="field hidden" id="recRangeField"><label>Окно дат</label><div style="display:flex;gap:6px"><input id="recFrom" type="number" min="1" max="31" placeholder="с"><input id="recTo" type="number" min="1" max="31" placeholder="по"></div></div></div><div class="modal-actions"><button type="button" class="btn danger hidden" id="deleteTx">Удалить</button><button type="button" class="btn" data-close="txModal">Отмена</button><button class="btn green" type="submit">Сохранить</button></div></form></div></div>
+<div class="modal-bg" id="eventModal"><div class="modal"><div class="modal-head"><h3>Событие на день</h3><button class="close" data-close="eventModal">×</button></div><form id="eventForm"><div class="form-grid"><div class="field"><label>Тип</label><select id="eventKind"><option value="expense">Оплатить</option><option value="income">Придёт</option><option value="note">Напоминание</option></select></div><div class="field"><label>Дата</label><input id="eventDate" type="date" required></div><div class="field"><label>Сумма, ₽</label><input id="eventAmount" type="number" min="0" step="1"></div><div class="field"><label>Кто платит</label><select id="eventPayer"><option value="me">Я</option><option value="other">Другой человек</option></select></div><div class="field full"><label>Что именно</label><input id="eventName" required></div></div><div class="modal-actions"><button type="button" class="btn" data-close="eventModal">Отмена</button><button class="btn green" type="submit">Сохранить</button></div></form></div></div>
+<div class="modal-bg" id="catModal"><div class="modal"><div class="modal-head"><h3 id="catTitle">Новая статья</h3><button class="close" data-close="catModal">×</button></div><form id="catForm"><input
