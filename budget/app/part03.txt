@@ -1,0 +1,86 @@
+и. План при этом остаётся отдельным.</div></div><div class="toolbar-actions"><button class="secondary income-btn" id="factIncome">+ Доход</button><button class="secondary expense-btn" id="factExpense">+ Расход</button></div></div>
+  <div class="notice">Для обычной покупки или случайного заработка выбирайте <b>«Незапланированная»</b>. Если операция закрывает плановую статью — лучше нажать «учесть факт» рядом с ней на экране «Месяц»: тогда приложение посчитает отклонение от плана, а не второй расход.</div>
+  <div class="metrics" id="factMetrics" style="margin-top:0;margin-bottom:16px"></div>
+  <div class="table-wrap" id="operationsTable"></div>
+</section>
+
+<section class="screen" id="screen-assistant">
+  <div class="toolbar"><div><h2 style="font-family:Georgia,serif;margin:0">Помощник</h2><div class="muted" style="margin-top:4px">Сначала считает сам, потом объясняет коротко и по делу.</div></div></div>
+  <div class="assistant-grid">
+    <div class="card" id="todayCard"></div>
+    <div class="card" id="warningsCard"></div>
+    <div class="card wide" id="actionsCard"></div>
+    <div class="card" id="scenarioCard"></div>
+    <div class="card" id="chatCard"></div>
+  </div>
+</section>
+
+<section class="screen" id="screen-plan">
+  <div class="toolbar"><div><h2 style="font-family:Georgia,serif;margin:0">План на 16 месяцев</h2><div class="muted" style="margin-top:4px">Ниже плана добавлены фактические итоги и прогноз с учётом незапланированных операций.</div></div></div>
+  <div class="table-wrap" id="planTable"></div>
+</section>
+
+<section class="screen" id="screen-categories">
+  <div class="toolbar"><div><h2 style="font-family:Georgia,serif;margin:0">Категории</h2><div class="muted" style="margin-top:4px">Базовые статьи можно менять без правки кода.</div></div><button class="primary" id="addCategory">+ Добавить статью</button></div>
+  <div class="notice">Исключения по сумме: <b>2026-09=22000</b>. На экране «Месяц» можно нажать «изменить» рядом с конкретной суммой — приложение само создаст такое исключение только для выбранного месяца.</div>
+  <div class="table-wrap" id="categoriesTable"></div>
+</section>
+
+<section class="screen" id="screen-file">
+  <div class="toolbar"><div><h2 style="font-family:Georgia,serif;margin:0">Файл и данные</h2><div class="muted" style="margin-top:4px">JSON сохраняет план и все фактические операции. Ключ ИИ в резервную копию не попадает.</div></div></div>
+  <div class="file-grid">
+    <div class="card"><h3>Резервная копия</h3><p class="muted">Скачать всё состояние приложения.</p><div class="file-actions"><button class="primary" id="downloadJson">Скачать JSON</button></div></div>
+    <div class="card"><h3>Загрузить состояние</h3><p class="muted">Подойдут JSON из этой версии и из первой версии приложения.</p><div class="drop"><input type="file" id="uploadJson" accept="application/json,.json" /></div></div>
+    <div class="card wide"><h3>Сброс</h3><p class="muted">Вернуть исходные данные из технического задания и удалить внесённые операции.</p><div class="file-actions"><button class="danger" id="resetData">Сбросить к исходным данным</button></div></div>
+  </div>
+</section>
+</div>
+
+<div class="modal-backdrop" id="operationModal" aria-hidden="true">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="operationTitle">
+    <div class="card-head"><div><h3 id="operationTitle">Добавить операцию</h3><p id="operationSubtitle">Факт не меняет базовые категории.</p></div><button class="icon-btn" id="closeOperation" aria-label="Закрыть">×</button></div>
+    <form id="operationForm">
+      <input type="hidden" id="opId" />
+      <div class="modal-grid">
+        <div class="field"><label for="opKind">Тип</label><select id="opKind"><option value="expense">Расход</option><option value="income">Доход</option></select></div>
+        <div class="field"><label for="opAmount">Сумма, ₽</label><input id="opAmount" type="number" min="0" step="1" required /></div>
+        <div class="field"><label for="opDate">Дата</label><input id="opDate" type="date" required /></div>
+        <div class="field"><label for="opName">Название</label><input id="opName" placeholder="Например, ремонт машины" required /></div>
+        <div class="field full"><label>Как учитывать</label><div class="radio-row"><label><input type="radio" name="opMode" value="unplanned" checked /> Незапланированная</label><label><input type="radio" name="opMode" value="planned" /> В рамках плана</label></div></div>
+        <div class="field full"><label for="opCategory">Связать с плановой статьёй (необязательно)</label><select id="opCategory"><option value="">Без категории</option></select></div>
+        <div class="field full"><label for="opNote">Комментарий</label><textarea id="opNote" placeholder="Необязательно"></textarea></div>
+      </div>
+      <div class="modal-actions"><button type="button" class="danger" id="deleteOperation" style="display:none;margin-right:auto">Удалить</button><button type="button" class="secondary" id="cancelOperation">Отмена</button><button type="submit" class="primary">Сохранить</button></div>
+    </form>
+  </div>
+</div>
+
+<script>
+(() => {
+'use strict';
+const STORAGE_KEY='budgetPlanner_v2';
+const OLD_STORAGE_KEY='budgetPlanner_v1';
+const MONTH_NAMES=['январь','февраль','март','апрель','май','июнь','июль','август','сентябрь','октябрь','ноябрь','декабрь'];
+const MONTH_SHORT=['янв','фев','мар','апр','май','июн','июл','авг','сен','окт','ноя','дек'];
+let apiKeySession='';
+
+const defaultState={
+  start:'2026-09',count:16,savingDay:20,selectedMonth:'2026-09',
+  ai:{endpoint:'https://api.openai.com/v1/responses',model:'gpt-5.6-luna',online:false},
+  cats:[
+    {id:'i_salary30',name:'Зарплата, вторая часть',kind:'income',amount:58000,freq:'month',day:30,from:null,months:[],overrides:{}},
+    {id:'i_advance15',name:'Зарплата, аванс',kind:'income',amount:42000,freq:'month',day:15,from:null,months:[],overrides:{'2026-09':22000}},
+    {id:'i_uni5',name:'Преподавание в вузе · 5-го',kind:'income',amount:7500,freq:'month',day:5,from:null,months:[],overrides:{}},
+    {id:'i_uni20',name:'Преподавание в вузе · 20-го',kind:'income',amount:7500,freq:'month',day:20,from:null,months:[],overrides:{}},
+    {id:'i_russpass',name:'Russpass',kind:'income',amount:7500,freq:'month',day:22,from:'2026-09',months:[],overrides:{}},
+    {id:'i_stipend',name:'Стипендия аспиранта',kind:'income',amount:3000,freq:'month',day:10,from:null,months:[],overrides:{}},
+    {id:'i_lessons',name:'Частные уроки',kind:'income',amount:8000,freq:'month',day:15,from:'2026-09',months:[],overrides:{}},
+    {id:'i_journal',name:'Юридический журнал',kind:'income',amount:15000,freq:'once',day:9,from:null,months:['2026-09','2027-03','2027-06','2027-09','2027-12'],overrides:{}},
+    {id:'e_rent',name:'Квартира',kind:'expense',amount:50000,freq:'month',day:5,from:null,months:[],overrides:{}},
+    {id:'e_food',name:'Продукты',kind:'expense',amount:3250,freq:'week',day:'spread',from:null,months:[],overrides:{}},
+    {id:'e_lunch',name:'Обеды в вузе',kind:'expense',amount:2500,freq:'week',day:'spread',from:null,months:[],overrides:{}},
+    {id:'e_editor',name:'Оператор-монтажёр',kind:'expense',amount:9000,freq:'month',day:20,from:'2026-10',months:[],overrides:{}},
+    {id:'e_cigs',name:'Сигареты',kind:'expense',amount:1600,freq:'week',day:'spread',from:null,months:[],overrides:{}},
+    {id:'e_ai',name:'Нейросети',kind:'expense',amount:6000,freq:'month',day:15,from:null,months:[],overrides:{}},
+    {id:'e_util',name:'Коммунальные услуги',kind:'expense',amount:3000,freq:'month',day:10,from:null,months:[],overrides:{}},
+    {

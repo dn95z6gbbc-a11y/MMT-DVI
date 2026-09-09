@@ -1,0 +1,53 @@
+id:'e_gas',name:'Бензин',kind:'expense',amount:3000,freq:'month',day:'spread',from:null,months:[],overrides:{}},
+    {id:'e_photo',name:'Фотограф',kind:'expense',amount:3000,freq:'month',day:20,from:null,months:[],overrides:{'2026-10':0}},
+    {id:'e_kontur',name:'Контур Толк',kind:'expense',amount:1400,freq:'month',day:15,from:null,months:[],overrides:{}},
+    {id:'e_megafon',name:'Мегафон',kind:'expense',amount:1200,freq:'month',day:15,from:null,months:[],overrides:{}},
+    {id:'e_tax',name:'Налог самозанятого',kind:'expense',amount:320,freq:'month',day:25,from:'2026-09',months:[],overrides:{}},
+    {id:'o_arkh',name:'Билеты в Архангельск',kind:'expense',amount:20000,freq:'once',day:15,from:null,months:['2026-09'],overrides:{}},
+    {id:'o_audio',name:'Звуковая карта',kind:'expense',amount:16000,freq:'once',day:20,from:null,months:['2026-10'],overrides:{}},
+    {id:'o_mics',name:'Микрофоны и провода',kind:'expense',amount:6000,freq:'once',day:20,from:null,months:['2026-11'],overrides:{}},
+    {id:'o_article',name:'Публикация научной статьи',kind:'expense',amount:5000,freq:'once',day:20,from:null,months:['2026-11'],overrides:{}},
+    {id:'o_osago',name:'ОСАГО',kind:'expense',amount:6000,freq:'once',day:15,from:null,months:['2027-06'],overrides:{}},
+    {id:'o_tires',name:'Летние шины',kind:'expense',amount:30000,freq:'once',day:15,from:null,months:['2027-07'],overrides:{}}
+  ],
+  savings:{'2026-09':8000,'2026-10':8000,'2026-11':8000,'2026-12':15500,'2027-01':15500,'2027-02':15500,'2027-03':25500,'2027-04':15500,'2027-05':15500,'2027-06':24500,'2027-07':-8000,'2027-08':15500,'2027-09':25500,'2027-10':15500,'2027-11':15500,'2027-12':25500},
+  levers:{kontur:false,oneAi:false,lunch3:false,secondStudent:false,quitSmoking:false},
+  transactions:[
+    {id:'seed_journal_20260909',kind:'income',amount:15000,date:'2026-09-09',name:'Юридический журнал',mode:'planned',categoryId:'i_journal',note:'По исходным данным платёж получен 9 сентября 2026.',createdAt:'2026-09-09T09:00:00.000Z'}
+  ],
+  lastChangeId:'seed_journal_20260909'
+};
+
+function clone(v){return JSON.parse(JSON.stringify(v))}
+function normalizeState(x){const base=clone(defaultState);const out={...base,...x};out.cats=Array.isArray(x&&x.cats)?x.cats:base.cats;out.savings={...base.savings,...((x&&x.savings)||{})};out.levers={...base.levers,...((x&&x.levers)||{})};out.transactions=Array.isArray(x&&x.transactions)?x.transactions:[];out.ai={...base.ai,...((x&&x.ai)||{})};delete out.apiKey;return out}
+function loadState(){try{const v2=localStorage.getItem(STORAGE_KEY);if(v2)return normalizeState(JSON.parse(v2));const v1=localStorage.getItem(OLD_STORAGE_KEY);if(v1){const old=normalizeState(JSON.parse(v1));old.transactions=[];old.lastChangeId=null;return old}return clone(defaultState)}catch(e){return clone(defaultState)}}
+let state=loadState();
+function save(){localStorage.setItem(STORAGE_KEY,JSON.stringify(state));const el=document.getElementById('saveState');if(el)el.textContent='Сохранено локально · '+new Date().toLocaleTimeString('ru-RU',{hour:'2-digit',minute:'2-digit'})}
+function monthList(){const [sy,sm]=state.start.split('-').map(Number),a=[];for(let i=0;i<state.count;i++){const d=new Date(sy,sm-1+i,1);a.push(`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`)}return a}
+function monthOfDate(d){return String(d||'').slice(0,7)}
+function monthLabel(m){const [y,mo]=m.split('-').map(Number);return MONTH_NAMES[mo-1][0].toUpperCase()+MONTH_NAMES[mo-1].slice(1)+' '+y}
+function monthShort(m){const [y,mo]=m.split('-').map(Number);return MONTH_SHORT[mo-1]+' '+String(y).slice(2)}
+function fmt(n,sign=false){const val=Math.round(Number(n)||0);const abs=Math.abs(val).toLocaleString('ru-RU').replace(/\u00a0/g,' ');if(sign){if(val>0)return '+'+abs+' ₽';if(val<0)return '−'+abs+' ₽';return '0 ₽'}return (val<0?'−':'')+abs+' ₽'}
+function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+function amountFor(cat,m,ignoreOnce=false){if(cat.overrides&&Object.prototype.hasOwnProperty.call(cat.overrides,m))return Number(cat.overrides[m])||0;if(cat.from&&m<cat.from)return 0;if(cat.freq==='once'){if(ignoreOnce)return 0;return (cat.months||[]).includes(m)?Number(cat.amount)||0:0}if(cat.freq==='week')return (Number(cat.amount)||0)*4.333;return Number(cat.amount)||0}
+function halfOfDay(day){if(day==='spread')return 'spread';const d=Number(day);return d>=15&&d<=29?'second':'first'}
+function txForMonth(m){return (state.transactions||[]).filter(t=>monthOfDate(t.date)===m)}
+function txByCat(m,catId,mode=null){return txForMonth(m).filter(t=>t.categoryId===catId&&(!mode||t.mode===mode))}
+function txSum(list,kind){return list.filter(t=>!kind||t.kind===kind).reduce((s,t)=>s+(Number(t.amount)||0),0)}
+function isSettled(cat,m){if(cat.day==='spread')return false;return txByCat(m,cat.id,'planned').length>0}
+function halfData(m,which,ignoreOnce=false){const rows=[];let income=0,expense=0;state.cats.forEach(cat=>{const amt=amountFor(cat,m,ignoreOnce);if(!amt)return;const h=halfOfDay(cat.day);if(h===which||h==='spread'){const val=h==='spread'?amt/2:amt;rows.push({cat,amount:val,spread:h==='spread',settled:isSettled(cat,m)});if(cat.kind==='income')income+=val;else expense+=val}});const saving=(halfOfDay(state.savingDay)===which)?Number(state.savings[m]||0):0;return {rows,income,expense,saving,balance:income-expense-saving}}
+function monthPlan(m){let income=0,expense=0;state.cats.forEach(c=>{const a=amountFor(c,m);if(c.kind==='income')income+=a;else expense+=a});const saving=Number(state.savings[m]||0);return {income,expense,saving,free:income-expense-saving,first:halfData(m,'first'),second:halfData(m,'second')}}
+function actualData(m){const tx=txForMonth(m);return {income:txSum(tx,'income'),expense:txSum(tx,'expense'),net:txSum(tx,'income')-txSum(tx,'expense'),count:tx.length}}
+function unplannedImpact(m){return txForMonth(m).filter(t=>t.mode==='unplanned').reduce((s,t)=>s+(t.kind==='income'?1:-1)*(Number(t.amount)||0),0)}
+function plannedVariance(m){let effect=0;state.cats.forEach(c=>{const actuals=txByCat(m,c.id,'planned');if(!actuals.length)return;const actual=txSum(actuals);const planned=amountFor(c,m);if(c.day==='spread'){
+    if(c.kind==='expense'&&actual>planned)effect-=actual-planned;else if(c.kind==='income'&&actual>planned)effect+=actual-planned;
+  }else{
+    if(c.kind==='income')effect+=actual-planned;else effect+=planned-actual;
+  }});return effect}
+function forecastData(m){const p=monthPlan(m),u=unplannedImpact(m),v=plannedVariance(m);return {...p,unplanned:u,variance:v,free:p.free+u+v}}
+function spreadTotal(m){return state.cats.filter(c=>c.kind==='expense'&&c.day==='spread').reduce((s,c)=>s+amountFor(c,m),0)}
+function actualSpreadExpense(m){const spreadIds=new Set(state.cats.filter(c=>c.kind==='expense'&&c.day==='spread').map(c=>c.id));return txForMonth(m).filter(t=>t.kind==='expense'&&t.mode==='planned'&&spreadIds.has(t.categoryId)).reduce((s,t)=>s+Number(t.amount||0),0)}
+function strictReserve(m){let exp=0,inc=0;state.cats.forEach(c=>{if(c.day==='spread')return;const d=Number(c.day);if(d>=1&&d<15){const a=amountFor(c,m);if(c.kind==='expense')exp+=a;else inc+=a}});return Math.max(0,exp-inc)}
+function recommendedReserve(m){return strictReserve(m)+3000}
+function chronic(){let min=Infinity,minMonth=null;monthList().forEach(m=>{const h=halfData(m,'first',true);if(h.balance<min){min=h.balance;minMonth=m}});if(!isFinite(min))min=0;return {min,minMonth,recommended:Math.ceil((Math.max(0,-min)+3000)/1000)*1000}}
+function cumulativeSavings(extraPerMonth=0,fromMonth=nu

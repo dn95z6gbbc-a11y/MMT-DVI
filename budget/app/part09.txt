@@ -1,0 +1,51 @@
+.id===opts.id):null,kind=existing?.kind||opts.kind||'expense',m=existing?monthOfDate(existing.date):(opts.month||state.selectedMonth),cat=existing?.categoryId||opts.categoryId||'',mode=existing?.mode||opts.mode||'unplanned';document.getElementById('operationTitle').textContent=existing?'Изменить операцию':(kind==='income'?'Добавить доход':'Добавить расход');document.getElementById('opId').value=existing?.id||'';document.getElementById('opKind').value=kind;document.getElementById('opAmount').value=existing?.amount??opts.amount??'';document.getElementById('opDate').value=existing?.date||opts.date||defaultDateForMonth(m);document.getElementById('opName').value=existing?.name||opts.name||'';document.getElementById('opNote').value=existing?.note||opts.note||'';document.querySelectorAll('input[name="opMode"]').forEach(r=>r.checked=r.value===mode);fillCategoryOptions(kind,cat);document.getElementById('opCategory').value=cat;document.getElementById('deleteOperation').style.display=existing?'inline-block':'none';document.getElementById('operationModal').classList.add('open');document.getElementById('operationModal').setAttribute('aria-hidden','false');setTimeout(()=>document.getElementById('opAmount').focus(),0)}
+function closeOperation(){document.getElementById('operationModal').classList.remove('open');document.getElementById('operationModal').setAttribute('aria-hidden','true')}
+function openPlannedFact(catId,m){const c=categoryById(catId);if(!c)return;const existing=txByCat(m,catId,'planned')[0];if(existing){openOperation({id:existing.id});return}let date;if(c.day==='spread')date=defaultDateForMonth(m);else{const d=Math.min(Number(c.day)||1,daysInMonth(m));date=`${m}-${String(d).padStart(2,'0')}`}openOperation({kind:c.kind,amount:Math.round(amountFor(c,m)),date,name:c.name,mode:'planned',categoryId:c.id,month:m})}
+function saveOperationFromForm(e){e.preventDefault();const id=document.getElementById('opId').value,kind=document.getElementById('opKind').value,amount=Number(document.getElementById('opAmount').value),date=document.getElementById('opDate').value,name=document.getElementById('opName').value.trim(),mode=document.querySelector('input[name="opMode"]:checked').value,categoryId=document.getElementById('opCategory').value,note=document.getElementById('opNote').value.trim();if(!amount||amount<0||!date||!name){alert('Заполните сумму, дату и название.');return}const obj={id:id||'t_'+Date.now()+'_'+Math.random().toString(36).slice(2,7),kind,amount,date,name,mode,categoryId,note,createdAt:id?(state.transactions.find(t=>t.id===id)?.createdAt||new Date().toISOString()):new Date().toISOString()};if(id){const i=state.transactions.findIndex(t=>t.id===id);if(i>=0)state.transactions[i]=obj}else state.transactions.push(obj);state.lastChangeId=obj.id;state.selectedMonth=monthOfDate(date);save();closeOperation();renderAll()}
+function deleteCurrentOperation(){const id=document.getElementById('opId').value;if(!id)return;if(confirm('Удалить эту фактическую операцию?')){state.transactions=state.transactions.filter(t=>t.id!==id);if(state.lastChangeId===id)state.lastChangeId=null;save();closeOperation();renderAll()}}
+
+function renderAll(){initMonthSelect();renderMonth();renderFact();renderAssistant();renderPlan();renderCategories()}
+
+document.getElementById('tabs').onclick=e=>{const b=e.target.closest('[data-screen]');if(!b)return;document.querySelectorAll('.tab').forEach(x=>x.classList.toggle('active',x===b));document.querySelectorAll('.screen').forEach(s=>s.classList.toggle('active',s.id==='screen-'+b.dataset.screen))};
+document.getElementById('monthSelect').onchange=e=>{state.selectedMonth=e.target.value;save();renderAll()};
+document.getElementById('prevMonth').onclick=()=>{const l=monthList(),i=l.indexOf(state.selectedMonth);if(i>0){state.selectedMonth=l[i-1];save();renderAll()}};
+document.getElementById('nextMonth').onclick=()=>{const l=monthList(),i=l.indexOf(state.selectedMonth);if(i<l.length-1){state.selectedMonth=l[i+1];save();renderAll()}};
+[['quickIncome','income'],['factIncome','income'],['quickExpense','expense'],['factExpense','expense']].forEach(([id,kind])=>document.getElementById(id).onclick=()=>openOperation({kind,mode:'unplanned',month:state.selectedMonth}));
+document.getElementById('opKind').onchange=e=>fillCategoryOptions(e.target.value,document.getElementById('opCategory').value);
+document.getElementById('operationForm').onsubmit=saveOperationFromForm;document.getElementById('closeOperation').onclick=closeOperation;document.getElementById('cancelOperation').onclick=closeOperation;document.getElementById('deleteOperation').onclick=deleteCurrentOperation;document.getElementById('operationModal').onclick=e=>{if(e.target.id==='operationModal')closeOperation()};document.addEventListener('keydown',e=>{if(e.key==='Escape')closeOperation()});
+document.getElementById('addCategory').onclick=()=>{state.cats.push({id:'c_'+Date.now(),name:'Новая статья',kind:'expense',amount:0,freq:'month',day:15,from:null,months:[],overrides:{}});save();renderAll()};
+document.getElementById('downloadJson').onclick=()=>{const exportState=clone(state);if(exportState.ai)delete exportState.ai.apiKey;const blob=new Blob([JSON.stringify(exportState,null,2)],{type:'application/json'}),a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='budget-plan-fact.json';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000)};
+document.getElementById('uploadJson').onchange=e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{try{const x=JSON.parse(r.result);if(!x||!Array.isArray(x.cats)||typeof x.savings!=='object')throw new Error('bad');state=normalizeState(x);apiKeySession='';save();renderAll();alert('Данные загружены.')}catch(err){alert('Не удалось прочитать JSON.')}};r.readAsText(f)};
+document.getElementById('resetData').onclick=()=>{if(confirm('Вернуть исходные данные и удалить все ваши изменения и фактические операции?')){state=clone(defaultState);apiKeySession='';save();renderAll()}};
+
+// PWA: установка и офлайн-кэш. Работает на HTTPS или localhost.
+let deferredInstallPrompt=null;
+const installBtn=document.getElementById('installPwa');
+const pwaStatus=document.getElementById('pwaStatus');
+function isStandalone(){return window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone===true}
+if(isStandalone()){pwaStatus.textContent='Установлено · работает как приложение'}
+window.addEventListener('beforeinstallprompt',e=>{
+  e.preventDefault();
+  deferredInstallPrompt=e;
+  installBtn.classList.add('visible');
+  pwaStatus.textContent='Можно установить на устройство';
+});
+installBtn.onclick=async()=>{
+  if(!deferredInstallPrompt){alert('Если кнопка установки Chrome не появилась, откройте меню браузера ⋮ и выберите «Установить приложение» или «Добавить на главный экран».');return}
+  deferredInstallPrompt.prompt();
+  try{await deferredInstallPrompt.userChoice}catch(e){}
+  deferredInstallPrompt=null;
+  installBtn.classList.remove('visible');
+};
+window.addEventListener('appinstalled',()=>{installBtn.classList.remove('visible');pwaStatus.textContent='Установлено · работает как приложение'});
+if('serviceWorker' in navigator){
+  window.addEventListener('load',()=>{
+    navigator.serviceWorker.register('./sw.js').then(()=>{if(!isStandalone()&&!deferredInstallPrompt)pwaStatus.textContent='PWA готова · офлайн после первого запуска'}).catch(()=>{pwaStatus.textContent='Офлайн-кэш недоступен в этом режиме'});
+  });
+}else{pwaStatus.textContent='Этот браузер не поддерживает офлайн-установку'}
+
+renderAll();
+})();
+</script>
+</body>
+</html>
