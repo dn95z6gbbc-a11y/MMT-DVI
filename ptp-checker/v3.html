@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>MMT V-CHECK</title>
+<style>html,body{margin:0;width:100%;height:100%;background:#f4f6fa}iframe{border:0;width:100%;height:100%;display:block}</style>
+</head>
+<body>
+<iframe id="app" src="./index.html?v=3" title="MMT V-CHECK"></iframe>
+<script>
+const frame=document.getElementById('app');
+frame.addEventListener('load',()=>{
+  const w=frame.contentWindow,d=frame.contentDocument;
+  const $=id=>d.getElementById(id);
+  const tag=d.querySelector('.hero .tag');
+  if(tag) tag.textContent='Сначала V‑CHECK. Потом — преподаватель.';
+  const privacy=d.querySelector('.privacy div');
+  if(privacy) privacy.innerHTML='<b>Проверка идёт в два слоя.</b><br>Формальные параметры проверяются на устройстве. Для содержательного ИИ-анализа файл временно передаётся модели только на время проверки и после обработки удаляется.';
+  const group=$('group');
+  if(group) group.innerHTML='<option value="">— выберите группу —</option><option>Г501-311</option><option>Г502-311</option><option>Г503-311</option>';
+  const old=$('aiElement');
+  if(old&&old.tagName==='SELECT'){
+    const input=d.createElement('input');
+    input.id='aiElement'; input.type='text'; input.autocomplete='off';
+    old.replaceWith(input);
+  }
+  function setAiPlaceholder(){
+    const el=$('aiElement'),fmt=$('format'); if(!el||!fmt)return;
+    const type=w.FORMATS?.[fmt.value]?.type;
+    el.placeholder=type==='text'?'Например: инфографика по собственным данным, схема или таймлайн':type==='audio'?'Например: джингл, музыкальная перебивка или синтезированный голос':'Например: музыкальная подложка, инфографика, схема или синтезированный голос';
+  }
+  setAiPlaceholder();
+  $('format')?.addEventListener('change',setAiPlaceholder);
+  const aiBox=d.querySelector('.ai-box');
+  if(aiBox) aiBox.innerHTML='<b>Одна кнопка — две проверки</b>После нажатия «Проверить материал» приложение сначала сверяет измеримые требования, затем запускает содержательный ИИ-анализ по инструктажу выбранного формата. В этой тестовой сборке ИИ-модуль ещё не подключён: формальная часть уже работает, а содержательная будет добавлена через серверный модуль.';
+});
+</script>
+</body>
+</html>
