@@ -1,0 +1,8 @@
+document.createElement('a');a.href=URL.createObjectURL(blob);a.download='budget-v3-backup.json';a.click();URL.revokeObjectURL(a.href)};
+document.getElementById('uploadJson').onchange=e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{try{state=Object.assign(clone(defaultState),JSON.parse(r.result));renderAll()}catch(err){alert('Не удалось прочитать JSON')}};r.readAsText(f)};
+document.getElementById('resetAll').onclick=()=>{if(confirm('Вернуть исходные данные v3?')){state=clone(defaultState);renderAll()}};
+renderAll();
+})();
+</script>
+</body>
+</html>
