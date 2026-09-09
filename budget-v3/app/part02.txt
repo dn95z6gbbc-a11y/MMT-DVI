@@ -1,0 +1,61 @@
+class="today-head"><div><h2 id="dayTitle">Сегодня</h2><div class="section-sub" style="margin:4px 0 0">Что должно прийти или что надо оплатить в этот день.</div></div><button class="btn primary" id="addPlannedToday">+ Запланировать</button></div>
+    <div class="day-list" id="dayList"></div>
+  </div>
+</section>
+
+<section class="screen" id="screen-history">
+<div class="toolbar"><div><h2 class="section-title">История</h2><p class="section-sub">Каждая реальная покупка или поступление — отдельной строкой.</p></div><div class="toolbar-actions"><button class="btn income" id="histIncome">+ Доход</button><button class="btn expense" id="histExpense">− Расход</button></div></div>
+<div class="metrics" id="historyMetrics"></div>
+<div class="table-wrap" id="historyTable"></div>
+</section>
+
+<section class="screen" id="screen-plan">
+<div class="toolbar"><div><h2 class="section-title">План</h2><p class="section-sub">Ожидаемые суммы по месяцам. Переменные категории входят как месячный ориентир.</p></div><select id="planMonth"></select></div>
+<div class="plan-month" id="planMetrics"></div>
+<div class="grid2"><div class="card"><h3 style="font-family:Georgia,serif;margin-top:0">Доходы</h3><div id="planIncome"></div></div><div class="card"><h3 style="font-family:Georgia,serif;margin-top:0">Расходы</h3><div id="planExpense"></div></div></div>
+</section>
+
+<section class="screen" id="screen-categories">
+<div class="toolbar"><div><h2 class="section-title">Категории</h2><p class="section-sub">Постоянная статья может быть с фиксированной, плавающей или вообще без даты.</p></div><button class="btn primary" id="addCategory">+ Категория</button></div>
+<div class="notice"><b>Продукты, обеды и бензин</b> теперь не разбиваются на «половины». Это постоянные категории с месячным ориентиром, но каждую реальную покупку вы заносите отдельно.</div>
+<div class="table-wrap" id="categoriesTable"></div>
+</section>
+
+<section class="screen" id="screen-assistant">
+<div class="toolbar"><div><h2 class="section-title">Помощник</h2><p class="section-sub">Короткие ответы по текущим данным приложения.</p></div></div>
+<div class="grid2"><div class="card" id="assistantSummary"></div><div class="card"><div class="chips"><button class="chip" data-q="Сколько я могу потратить до следующего дохода?">До следующего дохода</button><button class="chip" data-q="Что у меня ближайшее по платежам?">Ближайшие платежи</button><button class="chip" data-q="Как я иду по продуктам и обедам?">Продукты и обеды</button></div><div class="chat-log" id="chatLog"><div class="msg bot">Спроси про текущий остаток, ближайшие платежи или переменные расходы.</div></div><div class="chat-row"><input id="chatInput" placeholder="Например: хватит ли мне до 15 сентября?"><button class="btn primary" id="chatSend">Спросить</button></div></div></div>
+</section>
+
+<section class="screen" id="screen-file">
+<div class="toolbar"><div><h2 class="section-title">Файл и данные</h2><p class="section-sub">Резервная копия сохраняет остаток, категории, операции и план.</p></div></div>
+<div class="grid2"><div class="card"><h3 style="font-family:Georgia,serif;margin-top:0">Резервная копия</h3><div class="file-actions"><button class="btn primary" id="downloadJson">Скачать JSON</button></div></div><div class="card"><h3 style="font-family:Georgia,serif;margin-top:0">Загрузить</h3><input type="file" id="uploadJson" accept=".json,application/json"></div><div class="card"><h3 style="font-family:Georgia,serif;margin-top:0">Сброс</h3><button class="btn danger" id="resetAll">Вернуть исходные данные v3</button></div></div>
+</section>
+</div>
+
+<div class="modal-bg" id="txModal"><div class="modal"><div class="modal-head"><div><h3 id="txTitle">Новая операция</h3><div class="section-sub" style="margin-top:5px">Записывается в факт и сразу меняет текущий остаток.</div></div><button class="close" data-close="txModal">×</button></div><form id="txForm"><input type="hidden" id="txId"><div class="form-grid">
+<div class="field"><label>Тип</label><select id="txKind"><option value="expense">Расход</option><option value="income">Доход</option></select></div>
+<div class="field"><label>Сумма, ₽</label><input id="txAmount" type="number" min="0" step="1" required></div>
+<div class="field"><label>Дата</label><input id="txDate" type="date" required></div>
+<div class="field"><label>Категория</label><select id="txCategory"><option value="">Без категории</option></select></div>
+<div class="field full"><label>Название / комментарий</label><input id="txName" placeholder="Например, продукты в Перекрёстке"></div>
+<div class="field full"><label class="inline-check"><input type="checkbox" id="txPaidByOther"> Оплачивает другой человек — записать, но не уменьшать мой остаток</label></div>
+<div class="field full"><label class="inline-check"><input type="checkbox" id="txMakeRecurring"> Сделать это новой постоянной статьёй</label></div>
+<div class="field hidden" id="recNameField"><label>Название постоянной статьи</label><input id="recName"></div>
+<div class="field hidden" id="recScheduleField"><label>Дата постоянной статьи</label><select id="recSchedule"><option value="variable">Без фиксированной даты</option><option value="fixed">Один день месяца</option><option value="range">Диапазон дней</option></select></div>
+<div class="field hidden" id="recDayField"><label>День месяца</label><input id="recDay" type="number" min="1" max="31"></div>
+<div class="field hidden" id="recRangeField"><label>Диапазон, например 7–8</label><div style="display:flex;gap:7px"><input id="recFrom" type="number" min="1" max="31" placeholder="с"><input id="recTo" type="number" min="1" max="31" placeholder="по"></div></div>
+</div><div class="modal-actions"><button type="button" class="btn danger hidden" id="deleteTx">Удалить</button><button type="button" class="btn" data-close="txModal">Отмена</button><button type="submit" class="btn primary">Сохранить</button></div></form></div></div>
+
+<div class="modal-bg" id="catModal"><div class="modal"><div class="modal-head"><div><h3 id="catTitle">Категория</h3><div class="section-sub" style="margin-top:5px">Постоянная статья для плана и быстрых операций.</div></div><button class="close" data-close="catModal">×</button></div><form id="catForm"><input type="hidden" id="catId"><div class="form-grid">
+<div class="field full"><label>Название</label><input id="catName" required></div>
+<div class="field"><label>Тип</label><select id="catKind"><option value="expense">Расход</option><option value="income">Доход</option></select></div>
+<div class="field"><label>Ориентир в месяц, ₽</label><input id="catAmount" type="number" min="0" step="1" required></div>
+<div class="field"><label>Когда</label><select id="catSchedule"><option value="fixed">Один день</option><option value="range">Диапазон дней</option><option value="variable">Без даты</option><option value="floating">Плавающая дата</option></select></div>
+<div class="field"><label>Начинается с месяца</label><input id="catFrom" type="month"></div>
+<div class="field" id="catDayField"><label>День месяца</label><input id="catDay" type="number" min="1" max="31"></div>
+<div class="field hidden" id="catRangeField"><label>Диапазон дней</label><div style="display:flex;gap:7px"><input id="catDayFrom" type="number" min="1" max="31" placeholder="с"><input id="catDayTo" type="number" min="1" max="31" placeholder="по"></div></div>
+<div class="field full"><label>Пояснение</label><input id="catNote" placeholder="Например: дата каждый месяц немного сдвигается"></div>
+<div class="field full"><label>Исключения по месяцам</label><input id="catOverrides" placeholder="2026-09=22000; 2026-10=0"></div>
+</div><div class="modal-actions"><button type="button" class="btn danger hidden" id="deleteCat">Удалить</button><button type="button" class="btn" data-close="catModal">Отмена</button><button type="submit" class="btn primary">Сохранить</button></div></form></div></div>
+
+<div class="modal-bg" id="eventModal"><div class="modal"><div class="modal-head"><div><h3>Запланировать на день</h3><div class="section-sub" style="margin-top:5px">Разовое напоминание, не обязательно постоянная статья.</div></div><button class="close" data-close="eventModal">×</button></div><form id="eventForm"><div class="form-grid"><div class="field"><label>Тип</label><select id="eventKind"><option value="expense">Оплатить</option><option value="income">Придёт</option><option value="note">Напоминание</option></select></div><div class="field"><label>Дата</label><input id="eventDate" type="date" required></div><div class="field"><label>Сумма, ₽</label><input id="eventAmount" type="number" min="0" step="1" placeholder="можно оставить пустым"></div><div class="field"><label>Кто платит</label><select id="eventPayer"><option value="me">Я</option><option value="other">Другой человек</option></select></div><div class="field full"><label>Что именно</label><input id="eventName" required></div></div><div class="modal-actions"><button type="button" class="btn" data-close="eventModal">Отмена</button><but
