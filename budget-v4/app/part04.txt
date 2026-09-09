@@ -1,0 +1,41 @@
+ type="hidden" id="catId"><div class="form-grid"><div class="field full"><label>Название</label><input id="catName" required></div><div class="field"><label>Тип</label><select id="catKind"><option value="expense">Расход</option><option value="income">Доход</option></select></div><div class="field"><label>Ориентир, ₽</label><input id="catAmount" type="number" min="0" step="1" required></div><div class="field"><label>Когда</label><select id="catSchedule"><option value="variable">без даты</option><option value="fixed">конкретное число</option><option value="range">окно дат</option><option value="floating">плавающая</option></select></div><div class="field"><label>С какого месяца</label><input id="catFrom" type="month"></div><div class="field hidden" id="catDayField"><label>Число</label><input id="catDay" type="number" min="1" max="31"></div><div class="field hidden" id="catRangeField"><label>Окно</label><div style="display:flex;gap:6px"><input id="catDayFrom" type="number" min="1" max="31"><input id="catDayTo" type="number" min="1" max="31"></div></div><div class="field full"><label>Комментарий</label><input id="catNote"></div><div class="field full"><label>Исключения по месяцам</label><input id="catOverrides" placeholder="2026-09=26000; 2026-10=0"></div></div><div class="modal-actions"><button type="button" class="btn danger hidden" id="deleteCat">Удалить</button><button type="button" class="btn" data-close="catModal">Отмена</button><button class="btn green" type="submit">Сохранить</button></div></form></div></div>
+
+<script>
+(()=>{'use strict';
+const KEY='budgetPlanner_v4', OLD_KEY='budgetPlanner_v3';
+const defaultState={version:4,currentBalance:1895,balanceAsOf:'2026-09-09',selectedDate:'2026-09-09',planMonth:'2026-09',aiEndpoint:'',categories:[
+{id:'salary30',name:'Зарплата, вторая часть',kind:'income',amount:58000,schedule:'fixed',day:30,from:'2026-09',note:'Основная работа',overrides:{}},
+{id:'advance15',name:'Зарплата, аванс',kind:'income',amount:42000,schedule:'fixed',day:15,from:'2026-09',note:'В сентябре после отпуска меньше',overrides:{'2026-09':22000}},
+{id:'uni5',name:'Преподавание в вузе · 5-го',kind:'income',amount:7500,schedule:'fixed',day:5,from:'2026-09',note:'',overrides:{}},
+{id:'uni20',name:'Преподавание в вузе · 20-го',kind:'income',amount:7500,schedule:'fixed',day:20,from:'2026-09',note:'',overrides:{}},
+{id:'russpass',name:'Russpass',kind:'income',amount:7500,schedule:'floating',from:'2026-09',note:'После 20-го, точная дата и сумма могут меняться',overrides:{}},
+{id:'stipend',name:'Стипендия аспиранта',kind:'income',amount:3000,schedule:'fixed',day:25,from:'2026-09',note:'',overrides:{}},
+{id:'lesson15',name:'Частный урок · середина месяца',kind:'income',amount:4000,schedule:'fixed',day:15,from:'2026-09',note:'',overrides:{}},
+{id:'lesson30',name:'Частный урок · конец месяца',kind:'income',amount:4000,schedule:'fixed',day:30,from:'2026-09',note:'',overrides:{}},
+{id:'journal',name:'Юридический журнал',kind:'income',amount:15000,schedule:'floating',from:'2026-09',note:'4 раза в год; месяцы 2027 пока ориентировочные',months:['2026-09','2027-03','2027-06','2027-09','2027-12'],overrides:{}},
+{id:'rent',name:'Квартира',kind:'expense',amount:50000,schedule:'fixed',day:5,from:'2026-09',note:'Аренда',overrides:{}},
+{id:'products',name:'Продукты',kind:'expense',amount:14080,schedule:'variable',from:'2026-09',note:'Каждую покупку заносить отдельно',overrides:{}},
+{id:'lunch',name:'Обеды в вузе',kind:'expense',amount:10830,schedule:'variable',from:'2026-09',note:'Каждый обед заносить отдельно',overrides:{}},
+{id:'editor',name:'Оператор-монтажёр',kind:'expense',amount:9000,schedule:'fixed',day:20,from:'2026-10',note:'После съёмки/к выпуску',overrides:{}},
+{id:'cigs',name:'Сигареты',kind:'expense',amount:6930,schedule:'variable',from:'2026-09',note:'Без фиксированной даты',overrides:{}},
+{id:'ai',name:'Нейросети',kind:'expense',amount:6000,schedule:'range',dayFrom:7,dayTo:8,from:'2026-09',note:'Обычно 7–8 числа',overrides:{}},
+{id:'utilities',name:'Коммунальные услуги',kind:'expense',amount:3000,schedule:'range',dayFrom:29,dayTo:30,from:'2026-09',note:'Хозяйка присылает фактическую сумму',overrides:{}},
+{id:'gas',name:'Бензин',kind:'expense',amount:3000,schedule:'variable',from:'2026-09',note:'Редко; каждую заправку отдельно',overrides:{}},
+{id:'photo',name:'Фотограф',kind:'expense',amount:3000,schedule:'floating',from:'2026-09',note:'Плавающая дата: примерно с 25-го до 20-го следующего месяца',overrides:{'2026-10':0}},
+{id:'kontur',name:'Контур Толк',kind:'expense',amount:1400,schedule:'fixed',day:15,from:'2026-09',note:'',overrides:{}},
+{id:'router',name:'Мегафон · аренда роутера',kind:'expense',amount:100,schedule:'fixed',day:27,from:'2026-09',note:'Отдельный платёж',overrides:{}},
+{id:'megafonNet',name:'Мегафон · мобильный + домашний интернет',kind:'expense',amount:1100,schedule:'floating',from:'2026-09',note:'Дата постепенно сдвигается назад; последняя оплата 14.08.2026',overrides:{}},
+{id:'tax',name:'Налог самозанятого',kind:'expense',amount:320,schedule:'fixed',day:25,from:'2026-09',note:'4% с частных уроков при одной ученице',overrides:{}},
+{id:'arkh',name:'Билеты в Архангельск',kind:'expense',amount:20000,schedule:'once',date:'2026-09-15',from:'2026-09',note:'Разовая',overrides:{}},
+{id:'audio',name:'Звуковая карта',kind:'expense',amount:16000,schedule:'once',date:'2026-10-20',from:'2026-10',note:'Разовая',overrides:{}},
+{id:'mics',name:'Микрофоны и провода',kind:'expense',amount:6000,schedule:'once',date:'2026-11-20',from:'2026-11',note:'Разовая',overrides:{}},
+{id:'article',name:'Публикация научной статьи',kind:'expense',amount:5000,schedule:'once',date:'2026-11-20',from:'2026-11',note:'Половина платежа',overrides:{}},
+{id:'osago',name:'ОСАГО',kind:'expense',amount:6000,schedule:'once',date:'2027-06-15',from:'2027-06',note:'Разовая',overrides:{}},
+{id:'tires',name:'Летние шины',kind:'expense',amount:30000,schedule:'once',date:'2027-07-15',from:'2027-07',note:'Сумма ориентировочная',overrides:{}}
+],transactions:[{id:'t_journal',kind:'income',amount:15000,date:'2026-09-09',categoryId:'journal',name:'Юридический журнал',paidByOther:false,affectsBalance:false,note:'Получено 9 сентября; текущий остаток указан отдельно.'}],plannedEvents:[
+{id:'p_lunch9',date:'2026-09-09',kind:'expense',amount:500,name:'Обед в вузе',payer:'me'},{id:'p_lunch10',date:'2026-09-10',kind:'expense',amount:500,name:'Обед в вузе',payer:'me'},{id:'p_lunch11',date:'2026-09-11',kind:'expense',amount:500,name:'Обед в вузе',payer:'me'},{id:'p_parent_products',date:'2026-09-12',kind:'note',amount:0,name:'Продукты — помогают родители',payer:'other'},{id:'p_parent_food',date:'2026-09-14',kind:'note',amount:0,name:'Еда — помогают родители',payer:'other'}],savings:{'2026-09':8000,'2026-10':8000,'2026-11':8000,'2026-12':15500,'2027-01':15500,'2027-02':15500,'2027-03':25500,'2027-04':15500,'2027-05':15500,'2027-06':24500,'2027-07':-8000,'2027-08':15500,'2027-09':25500,'2027-10':15500,'2027-11':15500,'2027-12':25500}};
+const clone=o=>JSON.parse(JSON.stringify(o));
+function normalize(x){const b=clone(defaultState),o=Object.assign(b,x||{});o.categories=Array.isArray(x?.categories)?x.categories:b.categories;o.transactions=Array.isArray(x?.transactions)?x.transactions:b.transactions;o.plannedEvents=Array.isArray(x?.plannedEvents)?x.plannedEvents:b.plannedEvents;o.savings=Object.assign({},b.savings,x?.savings||{});o.version=4;return o}
+let state=(()=>{try{const v4=localStorage.getItem(KEY);if(v4)return normalize(JSON.parse(v4));const v3=localStorage.getItem(OLD_KEY);if(v3)return normalize(JSON.parse(v3));return clone(defaultState)}catch(e){return clone(defaultState)}})();
+const $=id=>document.getElementById(id);function save(){localStorage.setItem(KEY,JSON.stringify(state));$('savedState').textContent='Сохранено · '+new Date().toLocaleTimeString('ru-RU',{hour:'2-digit',minute:'2-digit'})}
+function fmt(n){n=Math.round(Number(n)||0);return (n<0?'−':'')+Math.abs(n
