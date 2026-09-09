@@ -1,0 +1,65 @@
+ton class="btn primary" type="submit">Сохранить</button></div></form></div></div>
+
+<script>
+(()=>{'use strict';
+const KEY='budgetPlanner_v3';
+const defaultState={version:3,currentBalance:1895,balanceAsOf:'2026-09-09',selectedDate:'2026-09-09',planMonth:'2026-09',
+categories:[
+{id:'salary30',name:'Зарплата, вторая часть',kind:'income',amount:58000,schedule:'fixed',day:30,from:'2026-09',note:'Основная работа',overrides:{}},
+{id:'advance15',name:'Зарплата, аванс',kind:'income',amount:42000,schedule:'fixed',day:15,from:'2026-09',note:'В сентябре после отпуска меньше',overrides:{'2026-09':22000}},
+{id:'uni5',name:'Преподавание в вузе · 5-го',kind:'income',amount:7500,schedule:'fixed',day:5,from:'2026-09',note:'',overrides:{}},
+{id:'uni20',name:'Преподавание в вузе · 20-го',kind:'income',amount:7500,schedule:'fixed',day:20,from:'2026-09',note:'',overrides:{}},
+{id:'russpass',name:'Russpass',kind:'income',amount:7500,schedule:'floating',from:'2026-09',note:'После 20-го, точная дата и сумма могут меняться',overrides:{}},
+{id:'stipend',name:'Стипендия аспиранта',kind:'income',amount:3000,schedule:'fixed',day:25,from:'2026-09',note:'',overrides:{}},
+{id:'lesson15',name:'Частный урок · середина месяца',kind:'income',amount:4000,schedule:'fixed',day:15,from:'2026-09',note:'Первая встреча 15 сентября',overrides:{}},
+{id:'lesson30',name:'Частный урок · конец месяца',kind:'income',amount:4000,schedule:'fixed',day:30,from:'2026-09',note:'Вторая встреча ближе к концу месяца',overrides:{}},
+{id:'journal',name:'Юридический журнал',kind:'income',amount:15000,schedule:'floating',from:'2026-09',note:'4 раза в год; месяцы 2027 пока не подтверждены',months:['2026-09','2027-03','2027-06','2027-09','2027-12'],overrides:{}},
+{id:'rent',name:'Квартира',kind:'expense',amount:50000,schedule:'fixed',day:5,from:'2026-09',note:'Аренда',overrides:{}},
+{id:'products',name:'Продукты',kind:'expense',amount:14080,schedule:'variable',from:'2026-09',note:'Постоянная статья без фиксированной даты: каждую покупку заносить отдельно',overrides:{}},
+{id:'lunch',name:'Обеды в вузе',kind:'expense',amount:10830,schedule:'variable',from:'2026-09',note:'Каждый обед заносить отдельной операцией',overrides:{}},
+{id:'editor',name:'Оператор-монтажёр',kind:'expense',amount:9000,schedule:'fixed',day:20,from:'2026-10',note:'После съёмки/к выпуску',overrides:{}},
+{id:'cigs',name:'Сигареты',kind:'expense',amount:6930,schedule:'variable',from:'2026-09',note:'Без фиксированной даты',overrides:{}},
+{id:'ai',name:'Нейросети',kind:'expense',amount:6000,schedule:'range',dayFrom:7,dayTo:8,from:'2026-09',note:'Обычно оплачиваются 7–8 числа',overrides:{}},
+{id:'utilities',name:'Коммунальные услуги',kind:'expense',amount:3000,schedule:'range',dayFrom:29,dayTo:30,from:'2026-09',note:'Хозяйка присылает сумму; фактическая сумма меняется',overrides:{}},
+{id:'gas',name:'Бензин',kind:'expense',amount:3000,schedule:'variable',from:'2026-09',note:'Редко, без конкретной даты; каждую заправку заносить отдельно',overrides:{}},
+{id:'photo',name:'Фотограф',kind:'expense',amount:3000,schedule:'floating',from:'2026-09',note:'Плавающая дата: обычно в промежутке от 25-го до 20-го следующего месяца',overrides:{'2026-10':0}},
+{id:'kontur',name:'Контур Толк',kind:'expense',amount:1400,schedule:'fixed',day:15,from:'2026-09',note:'',overrides:{}},
+{id:'router',name:'Мегафон · аренда роутера',kind:'expense',amount:100,schedule:'fixed',day:27,from:'2026-09',note:'Отдельный платёж',overrides:{}},
+{id:'megafonNet',name:'Мегафон · мобильный + домашний интернет',kind:'expense',amount:1100,schedule:'floating',from:'2026-09',note:'Дата каждый месяц немного сдвигается назад; последняя оплата 14.08.2026',overrides:{}},
+{id:'tax',name:'Налог самозанятого',kind:'expense',amount:320,schedule:'fixed',day:25,from:'2026-09',note:'4% с частных уроков при одной ученице',overrides:{}},
+{id:'arkh',name:'Билеты в Архангельск',kind:'expense',amount:20000,schedule:'once',date:'2026-09-15',from:'2026-09',note:'Разовая',overrides:{}},
+{id:'audio',name:'Звуковая карта',kind:'expense',amount:16000,schedule:'once',date:'2026-10-20',from:'2026-10',note:'Разовая',overrides:{}},
+{id:'mics',name:'Микрофоны и провода',kind:'expense',amount:6000,schedule:'once',date:'2026-11-20',from:'2026-11',note:'Разовая',overrides:{}},
+{id:'article',name:'Публикация научной статьи',kind:'expense',amount:5000,schedule:'once',date:'2026-11-20',from:'2026-11',note:'Половина платежа',overrides:{}},
+{id:'osago',name:'ОСАГО',kind:'expense',amount:6000,schedule:'once',date:'2027-06-15',from:'2027-06',note:'Разовая',overrides:{}},
+{id:'tires',name:'Летние шины',kind:'expense',amount:30000,schedule:'once',date:'2027-07-15',from:'2027-07',note:'Сумма ориентировочная',overrides:{}}
+],
+transactions:[{id:'t_journal',kind:'income',amount:15000,date:'2026-09-09',categoryId:'journal',name:'Юридический журнал',paidByOther:false,affectsBalance:false,note:'Получено 9 сентября; текущий остаток 1 895 ₽ уже указан отдельно.'}],
+plannedEvents:[
+{id:'p_lunch9',date:'2026-09-09',kind:'expense',amount:500,name:'Обед в вузе',payer:'me'},
+{id:'p_lunch10',date:'2026-09-10',kind:'expense',amount:500,name:'Обед в вузе',payer:'me'},
+{id:'p_lunch11',date:'2026-09-11',kind:'expense',amount:500,name:'Обед в вузе',payer:'me'},
+{id:'p_parent_products',date:'2026-09-12',kind:'note',amount:0,name:'Продукты — помогают родители',payer:'other'},
+{id:'p_parent_food',date:'2026-09-14',kind:'note',amount:0,name:'Еда — помогают родители',payer:'other'}
+],
+savings:{'2026-09':8000,'2026-10':8000,'2026-11':8000,'2026-12':15500,'2027-01':15500,'2027-02':15500,'2027-03':25500,'2027-04':15500,'2027-05':15500,'2027-06':24500,'2027-07':-8000,'2027-08':15500,'2027-09':25500,'2027-10':15500,'2027-11':15500,'2027-12':25500}
+};
+const clone=o=>JSON.parse(JSON.stringify(o));
+let state=(()=>{try{const x=localStorage.getItem(KEY);return x?Object.assign(clone(defaultState),JSON.parse(x)):clone(defaultState)}catch(e){return clone(defaultState)}})();
+function save(){localStorage.setItem(KEY,JSON.stringify(state));document.getElementById('savedState').textContent='Сохранено · '+new Date().toLocaleTimeString('ru-RU',{hour:'2-digit',minute:'2-digit'})}
+function fmt(n){n=Math.round(Number(n)||0);return (n<0?'−':'')+Math.abs(n).toLocaleString('ru-RU').replace(/\u00a0/g,' ')+' ₽'}
+function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+function monthOf(d){return String(d).slice(0,7)}
+function dateObj(s){const [y,m,d]=s.split('-').map(Number);return new Date(y,m-1,d)}
+function addDays(s,n){const d=dateObj(s);d.setDate(d.getDate()+n);return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`}
+function ruDate(s){return dateObj(s).toLocaleDateString('ru-RU',{weekday:'long',day:'numeric',month:'long'})}
+function amountFor(c,m){if(c.overrides&&Object.prototype.hasOwnProperty.call(c.overrides,m))return Number(c.overrides[m])||0;if(c.from&&m<c.from)return 0;if(c.schedule==='once')return c.date&&monthOf(c.date)===m?Number(c.amount)||0:0;if(c.id==='journal'&&Array.isArray(c.months))return c.months.includes(m)?Number(c.amount)||0:0;return Number(c.amount)||0}
+function category(id){return state.categories.find(c=>c.id===id)}
+function scheduleText(c){if(c.schedule==='fixed')return c.day+'-го';if(c.schedule==='range')return c.dayFrom+'–'+c.dayTo+'-го';if(c.schedule==='variable')return 'без даты';if(c.schedule==='floating')return 'плавающая';if(c.schedule==='once')return c.date||'разово';return ''}
+function dueOnDate(c,date){if(c.from&&monthOf(date)<c.from)return false;const day=Number(date.slice(8,10));if(c.schedule==='fixed')return day===Number(c.day);if(c.schedule==='range')return day>=Number(c.dayFrom)&&day<=Number(c.dayTo);if(c.schedule==='once')return c.date===date;return false}
+function plannedDay(date){const cats=state.categories.filter(c=>dueOnDate(c,date)).map(c=>({source:'cat',kind:c.kind,amount:amountFor(c,monthOf(date)),name:c.name,note:c.note||'',payer:'me',id:c.id}));const ev=state.plannedEvents.filter(e=>e.date===date).map(e=>({source:'event',...e}));return [...cats,...ev]}
+function nextIncome(after){let best=null;for(let i=1;i<=60;i++){const d=addDays(after,i);const rows=plannedDay(d).filter(x=>x.kind==='income'&&Number(x.amount)>0);if(rows.length){const amount=rows.reduce((s,x)=>s+Number(x.amount||0),0);best={date:d,amount,names:rows.map(x=>x.name)};break}}return best}
+function fixedExpensesUntil(from,to){if(!to)return 0;let sum=0,d=from;while(d<to){plannedDay(d).forEach(x=>{if(x.kind==='expense'&&x.payer!=='other')sum+=Number(x.amount)||0});d=addDays(d,1)}return sum}
+function txMonth(m){return state.transactions.filter(t=>monthOf(t.date)===m)}
+function categorySpent(catId,m){return txMonth(m).filter(t=>t.kind==='expense'&&t.categoryId===catId).reduce((s,t)=>s+Number(t.amount||0),0)}
+function planMonth(m){let inc=0,exp=0;state.categories.forEach(c=>{const a=amountFor(c,m);if(c.kind==='income')inc+=a;else exp+=a}
