@@ -1,0 +1,41 @@
+om:14px;box-shadow:0 12px 24px rgba(33,168,117,.18)}.ai-context h2{font-size:25px;letter-spacing:-.045em;margin:0 0 8px}.ai-context p{color:var(--muted);font-size:13px;line-height:1.5;margin:0}.context-stack{margin-top:18px}.context-row{display:flex;justify-content:space-between;gap:12px;padding:11px 0;border-top:1px solid var(--line);font-size:12px}.context-row span{color:var(--muted)}.context-row b{text-align:right}.ai-status{display:inline-flex;align-items:center;gap:6px;margin-top:14px;font-size:11px;color:var(--muted)}.ai-status i{width:7px;height:7px;border-radius:50%;background:var(--amber);display:block}.ai-status.online i{background:var(--green)}
+.chat-panel{min-height:560px;display:flex;flex-direction:column}.chips{display:flex;gap:7px;flex-wrap:wrap;margin-bottom:12px}.chip{border:1px solid var(--line);background:var(--surface2);border-radius:999px;padding:8px 10px;font-size:11px;font-weight:700;color:#415049}.chat-log{flex:1;min-height:360px;max-height:560px;overflow:auto;padding:4px 2px 12px}.msg-wrap{margin:9px 0;display:flex;flex-direction:column;align-items:flex-start}.msg-wrap.user{align-items:flex-end}.msg{max-width:88%;border-radius:18px;padding:11px 13px;line-height:1.48;font-size:13px;white-space:pre-wrap}.msg.user{background:var(--ink);color:#fff;border-bottom-right-radius:6px}.msg.bot{background:var(--surface2);border:1px solid var(--line);border-bottom-left-radius:6px}.msg-meta{font-size:10px;color:var(--muted);margin-top:4px}.analysis-box{margin-top:8px;padding:10px 11px;border:1px solid var(--line);border-radius:14px;background:#fff;max-width:88%}.analysis-box b{font-size:11px}.analysis-box ul{padding-left:18px;margin:6px 0 0;color:var(--muted);font-size:11px;line-height:1.45}.action-row{display:flex;gap:6px;flex-wrap:wrap;margin-top:7px}.action-btn{border:1px solid #CBE5D9;background:#F0FBF6;color:#176A4C;border-radius:11px;padding:7px 9px;font-size:11px;font-weight:800}.chat-input{display:grid;grid-template-columns:1fr auto;gap:8px;border-top:1px solid var(--line);padding-top:12px}.chat-input textarea{min-height:46px;max-height:130px;resize:none;border:1px solid var(--line);background:var(--surface2);border-radius:15px;padding:12px 13px;outline:none}.send{width:48px;height:48px;border:0;border-radius:15px;background:var(--ink);color:#fff;font-size:19px}.ai-foot{font-size:10px;color:var(--muted);margin-top:7px;line-height:1.4}
+.more-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}.section-label{font-size:11px;color:var(--muted);font-weight:750;text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px}.file-row{display:flex;gap:8px;flex-wrap:wrap}.setting{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:12px 0;border-top:1px solid var(--line)}.setting:first-of-type{border-top:0}.setting div b{font-size:13px}.setting div small{display:block;color:var(--muted);font-size:11px;margin-top:3px}.setting input{max-width:280px;width:100%}
+.bottom-nav{display:none;position:fixed;left:12px;right:12px;bottom:12px;height:68px;background:rgba(255,255,255,.94);backdrop-filter:blur(18px);border:1px solid rgba(220,227,223,.9);border-radius:22px;box-shadow:0 16px 45px rgba(16,32,25,.16);z-index:60;padding:7px}.bottom-nav button{flex:1;border:0;background:transparent;border-radius:15px;color:#748079;font-size:10px;font-weight:750;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px}.bottom-nav button svg{width:20px;height:20px}.bottom-nav button.active{background:#EEF4F1;color:var(--ink)}
+.modal-bg{display:none;position:fixed;inset:0;background:rgba(10,22,17,.48);z-index:100;align-items:flex-end;justify-content:center;padding:14px}.modal-bg.open{display:flex}.modal{width:min(620px,100%);max-height:92vh;overflow:auto;background:#fff;border-radius:26px;padding:20px;box-shadow:0 26px 80px rgba(0,0,0,.24)}.modal-head{display:flex;justify-content:space-between;gap:12px;align-items:start}.modal-head h3{margin:0;font-size:22px;letter-spacing:-.035em}.close{width:38px;height:38px;border-radius:12px;border:1px solid var(--line);background:#fff;font-size:18px}.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:11px;margin-top:16px}.field{display:flex;flex-direction:column;gap:5px}.field.full{grid-column:1/-1}.field label{font-size:11px;color:var(--muted);font-weight:700}.field input,.field select,.field textarea,.setting input{border:1px solid var(--line);background:var(--surface2);border-radius:12px;padding:10px 11px;outline:none}.inline-check{display:flex;align-items:center;gap:8px}.inline-check input{width:18px;height:18px}.modal-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:16px;flex-wrap:wrap}.hidden{display:none!important}
+@media(max-width:900px){.app{padding:16px 16px 104px}.hero-grid,.ai-layout,.grid2,.more-grid{grid-template-columns:1fr}.ai-context{position:static}.desktop-nav{display:none}.bottom-nav{display:flex}.topbar{margin-bottom:14px}.saved{display:none}.hero{min-height:230px}.kpis{grid-template-columns:1fr 1fr}}
+@media(max-width:560px){.top-actions .btn:not(.install){display:none}.brandtext span{display:none}.hero{padding:22px;border-radius:26px}.hero-foot{flex-direction:column;align-items:stretch}.quick{width:100%}.qbtn{flex:1}.panel{padding:16px;border-radius:21px}.date-input{max-width:138px}.event{grid-template-columns:40px 1fr auto;gap:9px}.event-icon{width:36px;height:36px}.kpis{grid-template-columns:1fr 1fr}.toolbar h1{font-size:24px}.form-grid{grid-template-columns:1fr}.field.full{grid-column:auto}.chat-panel{min-height:500px}.msg{max-width:94%}.analysis-box{max-width:94%}.modal-bg{padding:0;align-items:flex-end}.modal{border-radius:26px 26px 0 0}.more-grid{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="topbar">
+    <div class="brand"><div class="logo">₽</div><div class="brandtext"><b>Мои деньги</b><span>личный бюджет без лишнего шума</span></div></div>
+    <div class="top-actions"><div class="saved" id="savedState">Сохранено локально</div><button class="btn install" id="installPwa">Установить</button></div>
+  </div>
+  <nav class="desktop-nav" id="desktopNav">
+    <button class="active" data-screen="home">Главная</button><button data-screen="history">История</button><button data-screen="plan">План</button><button data-screen="assistant">ИИ</button><button data-screen="more">Ещё</button>
+  </nav>
+
+  <section class="screen active" id="screen-home">
+    <div class="hero-grid">
+      <div class="hero">
+        <div class="hero-label">Доступно сейчас</div>
+        <div class="balance" id="balanceValue">0 ₽</div>
+        <div class="hero-foot"><div class="hero-note" id="heroNote"></div><div class="quick"><button class="qbtn primary" id="quickExpense">− Расход</button><button class="qbtn" id="quickIncome">+ Доход</button></div></div>
+      </div>
+      <div class="panel">
+        <div class="panel-title"><div><h2>Ситуация</h2><p>до следующего надёжного дохода</p></div><div class="date-switch"><button class="iconbtn" id="prevDay">‹</button><input class="date-input" type="date" id="homeDate"><button class="iconbtn" id="nextDay">›</button></div></div>
+        <div class="situation" id="situation"></div>
+      </div>
+    </div>
+    <div class="panel today">
+      <div class="panel-title"><div><h2 id="dayTitle">Сегодня</h2><p>что придёт, что оплатить и что не забыть</p></div></div>
+      <div class="timeline" id="dayList"></div>
+      <button class="add-day" id="addPlannedToday">+ Добавить событие на этот день</button>
+    </div>
+  </section>
+
+  <section class="screen" id="screen-history">
+    <div class="toolbar"><div><h1>История</h1><p>Фактические доходы и расходы. Каждая покупка продуктов, обед и заправка — отдельной операцией.</p></div><div class="buttons"><button class="btn income" id="histIncome">+ Доход</button><button class="btn expense" id="histExpense">− Расход</button></div></div>
+    <div class="kpis" id="historyMetrics"></div><div class="table-wrap" id="historyTable"></d
