@@ -1,0 +1,1 @@
+V-CHECK visual AI module files: vision-ui.js and vision-loader.js. The stable index.html must include <script src="./vision-loader.js"></script> before </body> to enable the button after frames are extracted.
