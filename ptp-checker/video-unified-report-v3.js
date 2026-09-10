@@ -1,18 +1,22 @@
-// V-CHECK unified video report v3: formal report + Cloud Video transcript + Qwen frames + YandexGPT.
+// V-CHECK unified video report v3.1: formal report + Cloud Video transcript + Qwen frames + YandexGPT.
 (() => {
   const API_URL='https://functions.yandexcloud.net/d4ejdq5v5too7egeop63';
   const TEST_VIDEO_IDS={'Стрит тест.mp4':'vplvturpy67z22dg7om4'};
   const VIDEO_FORMATS=new Set(['story_event','story_theme','street','hot','live']);
   let running=false;
-  window.__VCHECK_UNIFIED_VIDEO_LOADED__='v3';
+  window.__VCHECK_UNIFIED_VIDEO_LOADED__='v3.1';
 
   const sleep=ms=>new Promise(r=>setTimeout(r,ms));
   const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-  function formatKey(){return String(document.getElementById('format')?.value||'');}
-  function videoFormat(){return VIDEO_FORMATS.has(formatKey());}
-  function file(){return document.getElementById('materialFile')?.files?.[0]||null;}
-  function duration(){try{return typeof material!=='undefined'&&Number.isFinite(material.duration)?Math.round(material.duration):null;}catch(_){return null;}}
-  function parseEnvelope(x){if(x&&typeof x.body==='string'){try{return JSON.parse(x.body);}catch(_){}}return x;}
+  const formatKey=()=>String(document.getElementById('format')?.value||'');
+  const videoFormat=()=>VIDEO_FORMATS.has(formatKey());
+  const currentFile=()=>document.getElementById('materialFile')?.files?.[0]||null;
+  const duration=()=>{try{return typeof material!=='undefined'&&Number.isFinite(material.duration)?Math.round(material.duration):null;}catch(_){return null;}};
+
+  function parseEnvelope(x){
+    if(x&&typeof x.body==='string'){try{return JSON.parse(x.body);}catch(_){} }
+    return x;
+  }
 
   async function api(body){
     const r=await fetch(API_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
@@ -37,15 +41,29 @@
     return out.join('\n');
   }
 
+  function progress(text,tone='normal'){
+    const report=document.getElementById('report');
+    const pdf=document.getElementById('pdfArea');
+    if(!report)return;
+    report.style.display='block';
+    let box=document.getElementById('vcheckUnifiedVideoProgress');
+    if(!box){
+      box=document.createElement('div');
+      box.id='vcheckUnifiedVideoProgress';
+      box.style.cssText='margin:12px 0;padding:13px 15px;border:1px solid #dbe3ee;border-radius:14px;font-size:13px';
+      (pdf||report).appendChild(box);
+    }
+    const t={normal:['#f8fafc','#dbe3ee','#334155'],ok:['#f0fdf4','#bbf7d0','#166534'],bad:['#fff1f2','#fecdd3','#9f1239']}[tone]||['#f8fafc','#dbe3ee','#334155'];
+    box.style.background=t[0];box.style.borderColor=t[1];box.style.color=t[2];
+    box.innerHTML=`<b>Видео: содержательная ИИ-проверка</b><br>${esc(text)}`;
+  }
+
   async function waitFrames(){
     const start=Date.now();
     while(Date.now()-start<45000){
       const st=window.__VCHECK_VIDEO_FRAMES_STATE__;
       const frames=Array.isArray(window.__VCHECK_VIDEO_FRAMES__)?window.__VCHECK_VIDEO_FRAMES__:[];
       if(st&&!st.running&&frames.length>=6)return frames;
-      if(document.visibilityState==='hidden'){
-        await new Promise(resolve=>{const f=()=>{if(document.visibilityState!=='hidden'){document.removeEventListener('visibilitychange',f);resolve();}};document.addEventListener('visibilitychange',f);});
-      }
       await sleep(300);
     }
     throw new Error('Не удалось дождаться стоп-кадров видео.');
@@ -98,74 +116,92 @@
     };
   }
 
-  function ensureProgressHost(){
-    const report=document.getElementById('report');
-    const pdf=document.getElementById('pdfArea');
-    if(!report)return null;
-    report.style.display='block';
-    let box=document.getElementById('vcheckUnifiedVideoProgress');
-    if(!box){
-      box=document.createElement('div');
-      box.id='vcheckUnifiedVideoProgress';
-      box.style.cssText='margin:12px 0;padding:13px 15px;border:1px solid #dbe3ee;border-radius:14px;font-size:13px';
-      (pdf||report).appendChild(box);
+  async function transcriptFor(file){
+    const videoId=TEST_VIDEO_IDS[file?.name||''];
+    if(!videoId)throw new Error('На тестовом этапе объединённая расшифровка подключена к файлу «Стрит тест.mp4».');
+
+    // If transcription has not been started yet, ask the backend to start it.
+    // If it is already running/ready, an error here is harmless: polling below remains authoritative.
+    try{
+      await api({action:'startVideoStt',videoId});
+    }catch(e){
+      console.warn('V-CHECK startVideoStt:',e?.message||e);
     }
-    return box;
+
+    const started=Date.now();
+    const timeoutMs=180000;
+    let attempt=0;
+    while(Date.now()-started<timeoutMs){
+      attempt++;
+      const d=await api({action:'videoSubtitles',videoId});
+      if(d?.transcriptReady&&d?.subtitleText){
+        const text=vttText(d.subtitleText);
+        if(text.trim())return text;
+      }
+      const elapsed=Math.round((Date.now()-started)/1000);
+      progress(`Cloud Video готовит расшифровку… ${elapsed} сек. Не закрывайте эту вкладку.`);
+      await sleep(attempt<3?3000:5000);
+    }
+    throw new Error('Cloud Video не успел подготовить расшифровку за 3 минуты. Повторите проверку — визуальный анализ уже сохранён в этой вкладке.');
   }
 
-  function progress(text,tone='normal'){
-    const box=ensureProgressHost();if(!box)return;
-    const t={normal:['#f8fafc','#dbe3ee','#334155'],ok:['#f0fdf4','#bbf7d0','#166534'],bad:['#fff1f2','#fecdd3','#9f1239']}[tone]||['#f8fafc','#dbe3ee','#334155'];
-    box.style.background=t[0];box.style.borderColor=t[1];box.style.color=t[2];
-    box.innerHTML=`<b>Видео: содержательная ИИ-проверка</b><br>${esc(text)}`;
-  }
-
-  function styles(){
+  function ensureStyles(){
     if(document.getElementById('vcheckUnifiedVideoStyles'))return;
-    const s=document.createElement('style');s.id='vcheckUnifiedVideoStyles';
-    s.textContent=`#vcheckUnifiedVideoReport{margin-top:12px;border:1px solid #fed7aa;background:#fffaf5;border-radius:17px;padding:18px;color:#334155}#vcheckUnifiedVideoReport h3{margin:0 0 4px;color:#111827;font-size:20px}#vcheckUnifiedVideoReport .vr-sub{color:#64748b;font-size:13px;margin-bottom:14px}.vr-overall,.vr-block{border:1px solid #f1e5da;background:#fff;border-radius:13px;padding:13px;margin-top:12px}.vr-check{display:grid;grid-template-columns:minmax(145px,.55fr) 1.45fr;gap:14px;border-top:1px solid #f1e5da;padding:12px 0}.vr-title{font-weight:850}.vr-pill{display:inline-block;margin-top:5px;border-radius:999px;padding:3px 7px;font-size:10px;font-weight:850}.ai-ok{background:#dcfce7;color:#166534}.ai-problem{background:#ffe4e6;color:#9f1239}.ai-warning{background:#fef3c7;color:#92400e}.ai-unknown{background:#e2e8f0;color:#475569}.vr-finding{font-weight:700}.vr-evidence{font-size:12px;color:#64748b;margin-top:5px}.vr-action{font-size:13px;color:#9a3412;margin-top:5px}.vr-block h4{margin:0 0 7px;color:#9a3412}.vr-block ul,.vr-block ol{margin:6px 0;padding-left:20px}@media(max-width:680px){.vr-check{grid-template-columns:1fr;gap:6px}}`;
+    const s=document.createElement('style');
+    s.id='vcheckUnifiedVideoStyles';
+    s.textContent=`
+      #vcheckUnifiedVideoReport{margin-top:12px;border:1px solid #fed7aa;background:#fffaf5;border-radius:17px;padding:18px;color:#334155}
+      #vcheckUnifiedVideoReport h3{margin:0 0 5px;color:#111827;font-size:20px}
+      #vcheckUnifiedVideoReport .vr-sub{color:#64748b;font-size:13px;margin-bottom:12px}
+      #vcheckUnifiedVideoReport .vr-overall,#vcheckUnifiedVideoReport .vr-block{border:1px solid #f1e5da;background:#fff;border-radius:13px;padding:13px;margin-top:12px}
+      #vcheckUnifiedVideoReport .vr-check{border-top:1px solid #f1e5da;padding:12px 0}
+      #vcheckUnifiedVideoReport .vr-title{font-weight:850;color:#1f2937}
+      #vcheckUnifiedVideoReport .vr-pill{display:inline-block;margin:5px 0;border-radius:999px;padding:3px 7px;font-size:10px;font-weight:850}
+      #vcheckUnifiedVideoReport .ok{background:#dcfce7;color:#166534}.problem{background:#ffe4e6;color:#9f1239}.warning{background:#fef3c7;color:#92400e}.unknown{background:#e2e8f0;color:#475569}
+      #vcheckUnifiedVideoReport .vr-evidence{font-size:12px;color:#64748b;margin-top:5px}#vcheckUnifiedVideoReport .vr-action{font-size:13px;color:#9a3412;margin-top:5px}
+    `;
     document.head.appendChild(s);
   }
-  const lab=s=>({ok:'Соблюдено',problem:'Проблема',warning:'Нужно внимание',unknown:'Не удалось определить'})[s]||s||'Проверка';
-  const cls=s=>s==='ok'?'ai-ok':s==='problem'?'ai-problem':s==='warning'?'ai-warning':'ai-unknown';
+
+  const statusLabel=s=>({ok:'Соблюдено',problem:'Проблема',warning:'Нужно внимание',unknown:'Не удалось определить'})[s]||'Проверка';
 
   function render(payload,vision){
-    styles();
-    const a=payload?.analysis||{},pdf=document.getElementById('pdfArea'),final=document.getElementById('final');
+    ensureStyles();
+    const a=payload?.analysis||{};
+    const pdf=document.getElementById('pdfArea');
+    const final=document.getElementById('final');
     if(!pdf)return;
     let root=document.getElementById('vcheckUnifiedVideoReport');
     if(!root){root=document.createElement('section');root.id='vcheckUnifiedVideoReport';final?pdf.insertBefore(root,final):pdf.appendChild(root);}
-    const checks=Array.isArray(a.checks)?a.checks:[],strengths=Array.isArray(a.strengths)?a.strengths:[],fixes=Array.isArray(a.priorityFixes)?a.priorityFixes:[],teacher=Array.isArray(a.teacherReview)?a.teacherReview:[];
-    root.innerHTML=`<h3>Глубокий ИИ-анализ видео</h3><div class="vr-sub">Расшифровка Cloud Video + ${Number(vision?.checked||0)} стоп-кадров Qwen · ИИ не заменяет преподавателя.</div><div class="vr-overall"><b>Общий вывод</b><br>${esc(a?.overall?.summary||'ИИ-анализ выполнен.')}</div>${checks.map(x=>`<div class="vr-check"><div><div class="vr-title">${esc(x.title||x.id||'Проверка')}</div><span class="vr-pill ${cls(x.status)}">${esc(lab(x.status))}</span></div><div><div class="vr-finding">${esc(x.finding||'')}</div>${Array.isArray(x.evidence)&&x.evidence.length?`<div class="vr-evidence"><b>Основание:</b> ${x.evidence.slice(0,3).map(esc).join(' · ')}</div>`:''}${x.recommendation?`<div class="vr-action"><b>Что сделать:</b> ${esc(x.recommendation)}</div>`:''}</div></div>`).join('')}${strengths.length?`<div class="vr-block"><h4>Сильные стороны</h4><ul>${strengths.map(x=>`<li>${esc(x)}</li>`).join('')}</ul></div>`:''}${fixes.length?`<div class="vr-block"><h4>Что исправить в первую очередь</h4><ol>${fixes.map(x=>`<li><b>${esc(x.problem||'')}</b>${x.how?` — ${esc(x.how)}`:''}</li>`).join('')}</ol></div>`:''}${teacher.length?`<div class="vr-block"><h4>Что должен проверить преподаватель</h4><ul>${teacher.map(x=>`<li>${esc(x)}</li>`).join('')}</ul></div>`:''}<div class="vr-block"><h4>Рекомендация перед сдачей</h4>${esc(a.finalRecommendation||'Сопоставьте выводы ИИ с исходным видео.')}</div>`;
+    const checks=Array.isArray(a.checks)?a.checks:[];
+    const strengths=Array.isArray(a.strengths)?a.strengths:[];
+    const fixes=Array.isArray(a.priorityFixes)?a.priorityFixes:[];
+    const teacher=Array.isArray(a.teacherReview)?a.teacherReview:[];
+    root.innerHTML=`<h3>Глубокий ИИ-анализ видео</h3><div class="vr-sub">Расшифровка Cloud Video + ${Number(vision?.checked||0)} стоп-кадров Qwen · ИИ не заменяет преподавателя.</div><div class="vr-overall"><b>Общий вывод</b><br>${esc(a?.overall?.summary||'ИИ-анализ выполнен.')}</div>${checks.map(x=>`<div class="vr-check"><div class="vr-title">${esc(x.title||x.id||'Проверка')}</div><span class="vr-pill ${esc(x.status||'unknown')}">${esc(statusLabel(x.status))}</span><div>${esc(x.finding||'')}</div>${Array.isArray(x.evidence)&&x.evidence.length?`<div class="vr-evidence"><b>Основание:</b> ${x.evidence.slice(0,3).map(esc).join(' · ')}</div>`:''}${x.recommendation?`<div class="vr-action"><b>Что сделать:</b> ${esc(x.recommendation)}</div>`:''}</div>`).join('')}${strengths.length?`<div class="vr-block"><b>Сильные стороны</b><ul>${strengths.map(x=>`<li>${esc(x)}</li>`).join('')}</ul></div>`:''}${fixes.length?`<div class="vr-block"><b>Что исправить в первую очередь</b><ol>${fixes.map(x=>`<li><b>${esc(x.problem||'')}</b>${x.how?` — ${esc(x.how)}`:''}</li>`).join('')}</ol></div>`:''}${teacher.length?`<div class="vr-block"><b>Что должен проверить преподаватель</b><ul>${teacher.map(x=>`<li>${esc(x)}</li>`).join('')}</ul></div>`:''}<div class="vr-block"><b>Рекомендация перед сдачей</b><br>${esc(a.finalRecommendation||'Сопоставьте выводы ИИ с исходным видео.')}</div>`;
     if(final&&a.finalRecommendation)final.textContent=a.finalRecommendation;
-    try{if(typeof reportText!=='undefined')reportText+=`\n\nГЛУБОКИЙ ИИ-АНАЛИЗ ВИДЕО\n${a?.overall?.summary||''}\n${checks.map(x=>`— ${x.title||x.id}: ${x.finding||''}`).join('\n')}\n\nРЕКОМЕНДАЦИЯ\n${a.finalRecommendation||''}`;}catch(_){}
+    try{
+      if(typeof reportText!=='undefined')reportText+=`\n\nГЛУБОКИЙ ИИ-АНАЛИЗ ВИДЕО\n${a?.overall?.summary||''}\n${checks.map(x=>`— ${x.title||x.id}: ${x.finding||''}`).join('\n')}\n\nРЕКОМЕНДАЦИЯ\n${a.finalRecommendation||''}`;
+    }catch(_){}
     root.scrollIntoView({behavior:'smooth',block:'start'});
-  }
-
-  async function transcriptFor(f){
-    const id=TEST_VIDEO_IDS[f?.name||''];
-    if(!id)throw new Error('Первый объединённый тест сейчас подключён к файлу «Стрит тест.mp4». После проверки отчёта автоматизируем загрузку любого видео в Cloud Video.');
-    const d=await api({action:'videoSubtitles',videoId:id});
-    if(!d?.transcriptReady||!d?.subtitleText)throw new Error('Cloud Video ещё не вернул готовую расшифровку.');
-    return vttText(d.subtitleText);
   }
 
   async function run(){
     if(running||!videoFormat())return;
-    const f=file();if(!f)return;
+    const file=currentFile();
+    if(!file)return;
     running=true;
-    const btn=document.querySelector('#form button[type="submit"]'),old=btn?.textContent||'Проверить материал';
+    const btn=document.querySelector('#form button[type="submit"]');
+    const old=btn?.textContent||'Проверить материал';
     if(btn){btn.disabled=true;btn.textContent='Проверяем видео…';}
     try{
       progress('Готовим 8 стоп-кадров…');
       await waitFrames();
       progress('Qwen анализирует визуальную часть…');
       const vision=await ensureVision();
-      progress('Получаем расшифровку речи из Cloud Video…');
-      const transcript=await transcriptFor(f);
-      if(!transcript.trim())throw new Error('Расшифровка оказалась пустой.');
+      progress('Получаем и при необходимости ждём расшифровку речи из Cloud Video…');
+      const transcript=await transcriptFor(file);
       const obs=compactVision(vision);
-      progress('YandexGPT объединяет речь, визуальные признаки и требования формата…');
+      progress('YandexGPT объединяет речь, визуальные признаки и требования выбранного формата…');
       const payload=await api({
         action:'analyzeMaterial',
         format:formatKey(),
@@ -194,18 +230,17 @@
   function trigger(){if(videoFormat())setTimeout(run,80);}
   function bind(){
     const form=document.getElementById('form');
-    if(!form||form.dataset.vcheckUnifiedVideo==='3')return;
-    form.dataset.vcheckUnifiedVideo='3';
+    if(!form||form.dataset.vcheckUnifiedVideo==='31')return;
+    form.dataset.vcheckUnifiedVideo='31';
     form.addEventListener('submit',trigger,true);
-    document.addEventListener('click',event=>{
-      const btn=event.target?.closest?.('#form button[type="submit"]');
-      if(btn)trigger();
-    },true);
+    document.addEventListener('click',event=>{if(event.target?.closest?.('#form button[type="submit"]'))trigger();},true);
     form.addEventListener('reset',()=>{
       document.getElementById('vcheckUnifiedVideoReport')?.remove();
       document.getElementById('vcheckUnifiedVideoProgress')?.remove();
     });
-    console.log('V-CHECK unified video v3 bound');
+    console.log('V-CHECK unified video v3.1 bound');
   }
-  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',bind,{once:true});else bind();
+
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',bind,{once:true});
+  else bind();
 })();
