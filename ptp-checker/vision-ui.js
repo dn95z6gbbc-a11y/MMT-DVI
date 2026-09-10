@@ -1,5 +1,5 @@
 // V-CHECK: visual AI analysis for extracted video frames.
-// This file is intentionally separate from index.html so the stable Safari page is not rebuilt.
+// Separate lightweight module: the stable Safari page itself is not rebuilt.
 (() => {
   const API_URL = 'https://functions.yandexcloud.net/d4ejdq5v5too7egeop63';
   let running = false;
@@ -15,7 +15,15 @@
   }
 
   function getFrameTime(el, index) {
-    return el.getAttribute('data-time') || el.dataset.time || `кадр ${index + 1}`;
+    return el.dataset.time || `кадр ${index + 1}`;
+  }
+
+  function getFrameBlob(el) {
+    const index = Number(el.dataset.index);
+    const frames = Array.isArray(window.__VCHECK_VIDEO_FRAMES__)
+      ? window.__VCHECK_VIDEO_FRAMES__
+      : [];
+    return frames.find(frame => Number(frame.index) === index)?.blob || null;
   }
 
   async function blobToBase64(blob) {
@@ -42,10 +50,11 @@
     return await blobToBase64(await response.blob());
   }
 
-  async function analyzeFrame(frameEl, index) {
+  async function analyzeFrame(frameEl) {
+    const blob = getFrameBlob(frameEl);
     const img = getFrameImage(frameEl);
-    const imageBase64 = await imageToBase64(img);
-    const mimeType = img?.src?.startsWith('data:image/png') ? 'image/png' : 'image/jpeg';
+    const imageBase64 = blob ? await blobToBase64(blob) : await imageToBase64(img);
+    const mimeType = blob?.type || (img?.src?.startsWith('data:image/png') ? 'image/png' : 'image/jpeg');
 
     const response = await fetch(API_URL, {
       method: 'POST',
@@ -72,23 +81,41 @@
       box.className = 'vcheck-frame-ai';
       frameEl.appendChild(box);
     }
-    const type = analysis.frameType || 'unknown';
-    const lower = analysis.lowerThirdVisible ? 'титр: да' : 'титр: нет/неясно';
-    box.textContent = `${type} · ${lower}`;
+    const labels = {
+      standup: 'стендап',
+      interview: 'интервью',
+      broll: 'перебивка?',
+      graphic: 'графика',
+      other: 'другое',
+      unknown: 'неясно'
+    };
+    const type = labels[analysis.frameType] || analysis.frameType || 'неясно';
+    const lower = analysis.lowerThirdVisible ? ' · титр' : '';
+    box.textContent = `${type}${lower}`;
   }
 
   function summarize(results) {
     const ok = results.filter(r => r.analysis);
     const counts = {};
     let lowerThird = 0;
+    let locationText = 0;
     let person = 0;
     for (const r of ok) {
       const t = r.analysis.frameType || 'unknown';
       counts[t] = (counts[t] || 0) + 1;
       if (r.analysis.lowerThirdVisible) lowerThird++;
+      if (r.analysis.locationTextVisible) locationText++;
       if (r.analysis.personOnCamera) person++;
     }
-    return {checked: ok.length, failed: results.length - ok.length, counts, lowerThird, person, frames: results};
+    return {
+      checked: ok.length,
+      failed: results.length - ok.length,
+      counts,
+      lowerThird,
+      locationText,
+      person,
+      frames: results
+    };
   }
 
   function ensureStyles() {
@@ -100,8 +127,9 @@
       .vcheck-vision-btn{border:0;border-radius:12px;padding:10px 14px;font:inherit;font-weight:800;background:#111827;color:#fff;cursor:pointer}
       .vcheck-vision-btn:disabled{opacity:.48;cursor:not-allowed}
       .vcheck-vision-status{font-size:13px;color:#667085}
-      .vcheck-frame-ai{font-size:10px;line-height:1.25;margin-top:4px;color:#475569}
-      .vcheck-vision-summary{margin-top:10px;padding:12px;border:1px solid #dbe3ee;background:#f8fafc;border-radius:12px;font-size:13px;color:#334155}
+      .vcheck-frame-ai{position:absolute;right:6px;top:6px;z-index:2;max-width:calc(100% - 12px);padding:3px 6px;border-radius:999px;background:rgba(15,23,42,.84);color:#fff;font-size:9px;line-height:1.25;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+      .vcheck-vision-summary{margin-top:10px;padding:12px;border:1px solid #dbe3ee;background:#fff;border-radius:12px;font-size:13px;color:#334155}
+      .vcheck-vision-summary b{color:#111827}
     `;
     document.head.appendChild(style);
   }
@@ -110,7 +138,7 @@
     ensureStyles();
     const frames = getFrames();
     if (!frames.length) return false;
-    const host = frames[0].parentElement?.parentElement || frames[0].parentElement;
+    const host = document.getElementById('vcheckVideoFrames') || frames[0].parentElement?.parentElement;
     if (!host || host.querySelector('.vcheck-vision-actions')) return true;
 
     const actions = document.createElement('div');
@@ -136,21 +164,29 @@
       const results = [];
       try {
         for (let i = 0; i < currentFrames.length; i++) {
-          status.textContent = `ИИ анализирует кадр ${i + 1} из ${currentFrames.length}…`;
+          status.textContent = `Qwen анализирует кадр ${i + 1} из ${currentFrames.length}…`;
           try {
-            const analysis = await analyzeFrame(currentFrames[i], i);
+            const analysis = await analyzeFrame(currentFrames[i]);
             results.push({index: i, time: getFrameTime(currentFrames[i], i), analysis});
             renderResult(currentFrames[i], analysis);
           } catch (error) {
             results.push({index: i, time: getFrameTime(currentFrames[i], i), error: String(error?.message || error)});
           }
-          await sleep(180);
+          await sleep(220);
         }
+
         const summary = summarize(results);
         window.VCHECK_VIDEO_VISION = summary;
-        const types = Object.entries(summary.counts).map(([k,v]) => `${k}: ${v}`).join(' · ') || 'нет данных';
+        const names = {
+          standup: 'стендап', interview: 'интервью', broll: 'перебивка?',
+          graphic: 'графика', other: 'другое', unknown: 'неясно'
+        };
+        const types = Object.entries(summary.counts)
+          .map(([k,v]) => `${names[k] || k}: ${v}`)
+          .join(' · ') || 'нет данных';
+
         summaryBox.hidden = false;
-        summaryBox.innerHTML = `<b>Визуальная ИИ-проверка готова.</b><br>Проверено: ${summary.checked}; ошибок: ${summary.failed}.<br>${types}<br>Кадров с человеком: ${summary.person}; с нижним титром: ${summary.lowerThird}.`;
+        summaryBox.innerHTML = `<b>Визуальная ИИ-проверка готова.</b><br>Проверено: ${summary.checked} из ${currentFrames.length}${summary.failed ? `; ошибок: ${summary.failed}` : ''}.<br>${types}<br>Кадров с человеком: ${summary.person}; с нижним титром: ${summary.lowerThird}; с видимым названием места: ${summary.locationText}.`;
         status.textContent = `Готово: ${summary.checked} из ${currentFrames.length} кадров.`;
       } finally {
         running = false;
