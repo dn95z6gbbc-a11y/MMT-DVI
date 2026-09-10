@@ -9,7 +9,7 @@
     if(document.getElementById('vcheckUnifiedVideoScript'))return;
     const s=document.createElement('script');
     s.id='vcheckUnifiedVideoScript';
-    s.src='./video-unified-report-v2.js?build=20260910-1918';
+    s.src='./video-unified-report-v3.js?build=20260910-1920';
     s.defer=true;
     document.head.appendChild(s);
   }
