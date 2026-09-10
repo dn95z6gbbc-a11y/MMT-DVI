@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>V-CHECK</title>
+<style>
+html,body{margin:0;width:100%;height:100%;background:#f4f6fa;font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+#loading{position:fixed;inset:0;display:grid;place-items:center;background:#f4f6fa;color:#111827;z-index:10}
+#loadingBox{background:#fff;border:1px solid #e5e7eb;border-radius:18px;padding:20px 24px;box-shadow:0 12px 34px rgba(15,23,42,.08);max-width:440px;text-align:center}
+#loadingBox b{display:block;font-size:18px;margin-bottom:6px}
+#loadingBox span{display:block;color:#667085;font-size:14px;line-height:1.45}
+#app{border:0;width:100%;height:100%;display:none;background:#f4f6fa}
+</style>
+</head>
+<body>
+<div id="loading"><div id="loadingBox"><b>Загружаем V-CHECK…</b><span>Запускаем облегчённую версию для Safari.</span></div></div>
+<iframe id="app" title="V-CHECK"></iframe>
+<script>
+(async function(){
+  const frame=document.getElementById('app');
+  const loading=document.getElementById('loading');
+  const loadingBox=document.getElementById('loadingBox');
+
+  function parentScript(src){
+    return new Promise((resolve,reject)=>{
+      const s=document.createElement('script');
+      s.src=src;
+      s.async=false;
+      s.onload=resolve;
+      s.onerror=()=>reject(new Error('Не загрузился модуль '+src));
+      document.body.appendChild(s);
+    });
+  }
+
+  function childScript(src){
+    return new Promise(resolve=>{
+      const d=frame.contentDocument;
+      const s=d.createElement('script');
+      s.src=src;
+      s.async=true;
+      s.onload=resolve;
+      s.onerror=resolve;
+      d.head.appendChild(s);
+    });
+  }
+
+  try{
+    const r=await fetch('./index.html?core=20-'+Date.now(),{cache:'no-store'});
+    if(!r.ok)throw new Error('Не удалось загрузить основу приложения.');
+    let html=await r.text();
+
+    // Убираем тяжёлые внешние библиотеки из первого запуска Safari.
+    html=html.replace(/<script src="https:\/\/cdn\.jsdelivr\.net\/npm\/mammoth[^>]*><\/script>/g,'');
+    html=html.replace(/<script src="https:\/\/cdn\.jsdelivr\.net\/npm\/html2pdf[^>]*><\/script>/g,'');
+
+    // Критичные правки применяем до первого показа интерфейса.
+    html=html.replaceAll('Суперсил не даёт. От очевидных косяков перед сдачей спасает.','Сначала V‑CHECK. Потом — преподаватель.');
+    html=html.replaceAll('G501-3011','Ж501-311').replaceAll('G502-3011','Ж502-311').replaceAll('G503-3011','Ж503-311');
+    html=html.replaceAll('400 МБ','100 МБ').replaceAll('400*1048576','100*1048576');
+    html=html.replace('Быстрая проверка выполняется на устройстве.</b><br>Файл не сохраняется. Для будущей содержательной ИИ-проверки будет отдельное согласие на временную отправку файла.','Проверка идёт в два слоя.</b><br>Формальные параметры проверяются автоматически. Текстовые материалы читает YandexGPT. Подкасты расшифровывает SpeechKit. Для видео используются распознавание речи и визуальные кадры. Итоговое решение остаётся за преподавателем.');
+
+    // Safari иногда подвисает на iframe.srcdoc. Пишем документ напрямую в same-origin iframe.
+    const d=frame.contentDocument;
+    d.open();
+    d.write(html);
+    d.close();
+
+    if(!d.getElementById('form'))throw new Error('Основа приложения не запустилась.');
+
+    // Загружаем локальные модули только после готовности документа.
+    await parentScript('./v3-app-v9.js?v=20');
+    await parentScript('./v3-audio-v10.js?v=20');
+    await parentScript('./v3-video-frames-v17.js?v=20');
+    await parentScript('./v3-video-vision-v16.js?v=20');
+    await parentScript('./v3-copy-v10.js?v=20');
+
+    // Эти модули ждут load iframe. Запускаем их один раз вручную после сборки документа.
+    frame.dispatchEvent(new Event('load'));
+
+    // Финальная страховка критичных подписей после модулей.
+    const tag=d.querySelector('.hero .tag');
+    if(tag)tag.textContent='Сначала V‑CHECK. Потом — преподаватель.';
+    const group=d.getElementById('group');
+    if(group)group.innerHTML='<option value="">— выберите группу —</option><option>Ж501-311</option><option>Ж502-311</option><option>Ж503-311</option>';
+    const hint=d.querySelector('#materialBox .hint');
+    if(hint)hint.textContent=hint.textContent.replace(/400 МБ/g,'100 МБ');
+
+    frame.style.display='block';
+    loading.style.display='none';
+
+    // Необязательные библиотеки догружаем после появления интерфейса.
+    childScript('https://cdn.jsdelivr.net/npm/mammoth@1.8.0/mammoth.browser.min.js');
+    Promise.resolve()
+      .then(()=>parentScript('https://cdn.jsdelivr.net/npm/pdfmake@0.2.10/build/pdfmake.min.js'))
+      .then(()=>parentScript('https://cdn.jsdelivr.net/npm/pdfmake@0.2.10/build/vfs_fonts.js'))
+      .then(()=>parentScript('./v3-polish-v11.js?v=20'))
+      .then(()=>frame.dispatchEvent(new Event('load')))
+      .catch(()=>{});
+
+  }catch(err){
+    loadingBox.innerHTML='<b>Не удалось открыть V-CHECK</b><span>'+String(err&&err.message||err)+'</span>';
+  }
+})();
+</script>
+</body>
+</html>
