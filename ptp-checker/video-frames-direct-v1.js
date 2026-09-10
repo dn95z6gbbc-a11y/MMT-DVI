@@ -80,6 +80,15 @@
     return box;
   }
 
+  function loadVisionUi(){
+    if(d.getElementById('vcheckVisionUiScript'))return;
+    const s=d.createElement('script');
+    s.id='vcheckVisionUiScript';
+    s.src='./vision-ui.js?build=20260910-vision2';
+    s.defer=true;
+    d.head.appendChild(s);
+  }
+
   async function readMeta(sourceUrl){
     const video=d.createElement('video');
     video.preload='metadata';
@@ -153,6 +162,7 @@
     revokePreviewUrls();
     window.__VCHECK_VIDEO_FRAMES__=[];
     window.__VCHECK_VIDEO_FRAMES_STATE__={running:true,target:FRAME_COUNT,done:0,failed:0};
+    window.VCHECK_VIDEO_VISION=null;
 
     const box=ensureBox();
     if(!box)return;
@@ -160,6 +170,7 @@
     const grid=box.querySelector('.vf-grid');
     box.style.display='block';
     grid.innerHTML='';
+    box.querySelectorAll('.vcheck-vision-actions,.vcheck-vision-summary').forEach(el=>el.remove());
     status.className='vf-status';
     status.textContent='Читаем видео и выбираем кадры…';
 
@@ -183,6 +194,9 @@
           previewUrls.push(url);
           const item=d.createElement('div');
           item.className='vf-item';
+          item.dataset.vcheckFrame='1';
+          item.dataset.index=String(i);
+          item.dataset.time=formatTime(shot.timeSeconds);
           item.innerHTML=`<img alt="Кадр ${i+1}"><span class="vf-time">${formatTime(shot.timeSeconds)}</span>`;
           item.querySelector('img').src=url;
           grid.appendChild(item);
@@ -205,6 +219,7 @@
       window.__VCHECK_VIDEO_FRAMES_STATE__={running:false,target:FRAME_COUNT,done:FRAME_COUNT,failed};
       if(frames.length>=6){
         status.textContent=`Готово: ${frames.length} кадров${failed?` · пропущено: ${failed}`:''} · видео ${formatTime(meta.duration)}${avg?` · средний кадр ≈ ${avg} КБ`:''}.`;
+        loadVisionUi();
       }else{
         status.className='vf-status vf-error';
         status.textContent=`Удалось получить только ${frames.length} кадров. Попробуйте выбрать видео ещё раз.`;
@@ -232,14 +247,14 @@
       const file=input.files?.[0];
       const box=ensureBox();
       if(!file){
-        ++runId;revokePreviewUrls();window.__VCHECK_VIDEO_FRAMES__=[];
+        ++runId;revokePreviewUrls();window.__VCHECK_VIDEO_FRAMES__=[];window.VCHECK_VIDEO_VISION=null;
         window.__VCHECK_VIDEO_FRAMES_STATE__={running:false,target:FRAME_COUNT,done:0,failed:0};
         if(box)box.style.display='none';
         return;
       }
       const isVideo=String(file.type||'').startsWith('video/')||/\.(mp4|webm|mov|m4v)$/i.test(file.name||'');
       if(!isVideo){
-        ++runId;revokePreviewUrls();window.__VCHECK_VIDEO_FRAMES__=[];
+        ++runId;revokePreviewUrls();window.__VCHECK_VIDEO_FRAMES__=[];window.VCHECK_VIDEO_VISION=null;
         window.__VCHECK_VIDEO_FRAMES_STATE__={running:false,target:FRAME_COUNT,done:0,failed:0};
         if(box)box.style.display='none';
         return;
