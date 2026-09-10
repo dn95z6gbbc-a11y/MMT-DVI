@@ -75,7 +75,7 @@
     box=d.createElement('div');
     box.id='vcheckVideoFrames';
     box.style.display='none';
-    box.innerHTML='<h4>Кадры для визуальной проверки</h4><p class="vf-note">V-CHECK выбирает 8 стоп-кадров по всей длине ролика. Пока это локальный предпросмотр — кадры никуда не отправляются.</p><div class="vf-status"></div><div class="vf-grid"></div>';
+    box.innerHTML='<h4>Кадры для визуальной проверки</h4><p class="vf-note">V-CHECK выбирает 8 стоп-кадров по всей длине ролика. До запуска ИИ-проверки они остаются на устройстве; при нажатии кнопки выбранные кадры временно отправляются в Yandex Cloud для анализа.</p><div class="vf-status"></div><div class="vf-grid"></div>';
     materialBox.insertAdjacentElement('afterend',box);
     return box;
   }
@@ -84,7 +84,7 @@
     if(d.getElementById('vcheckVisionUiScript'))return;
     const s=d.createElement('script');
     s.id='vcheckVisionUiScript';
-    s.src='./vision-ui.js?build=20260910-vision2';
+    s.src='./vision-ui.js?build=20260910-vision3';
     s.defer=true;
     d.head.appendChild(s);
   }
