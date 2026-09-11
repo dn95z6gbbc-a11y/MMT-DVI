@@ -4,7 +4,7 @@
     'Стрит тест.mp4':'vplvturpy67z22dg7om4'
   };
   const MAX_CONCURRENCY=2;
-  const TARGET_FRAMES=8;
+  const TARGET_FRAMES=Number(window.__VCHECK_VIDEO_TARGET_FRAMES__||24);
   let runId=0;
 
   function parseEnvelope(value){
@@ -40,7 +40,7 @@
     note=document.createElement('div');
     note.id='cloudVisionNote';
     note.style.cssText='margin-top:14px;border:1px solid #bfdbfe;background:#eff6ff;color:#1e3a8a;border-radius:14px;padding:12px 14px;font-size:13px;line-height:1.45';
-    note.innerHTML='<b>Облачный визуальный анализ.</b><br>Видео не декодируется по кадрам в Safari. V-CHECK вырезает 8 стоп-кадров на сервере через FFmpeg и отправляет их Qwen.';
+    note.innerHTML=`<b>Облачный визуальный анализ.</b><br>Видео не декодируется по кадрам в Safari. V-CHECK вырезает ${TARGET_FRAMES} стоп-кадров на сервере через FFmpeg и отправляет их Qwen.`;
     materialBox.insertAdjacentElement('afterend',note);
     return note;
   }
@@ -48,6 +48,17 @@
   function setNote(html){
     const note=ensureNote();
     if(note)note.innerHTML=html;
+  }
+
+  function compactGlobalEvidence(globalVision){
+    const g=globalVision||{};
+    return {
+      standupEvidence:Array.isArray(g.standupEvidence)?g.standupEvidence.slice(0,3):[],
+      respondentEvidence:Array.isArray(g.respondentEvidence)?g.respondentEvidence.slice(0,12):[],
+      cutawayEvidence:Array.isArray(g.cutawayEvidence)?g.cutawayEvidence.slice(0,6):[],
+      sequenceNotes:Array.isArray(g.sequenceNotes)?g.sequenceNotes.slice(0,6):[],
+      uncertain:Array.isArray(g.uncertain)?g.uncertain.slice(0,6):[]
+    };
   }
 
   function installAnalyzeMaterialBridge(){
@@ -68,7 +79,13 @@
               processedFrames:Number(vision.checked||0),
               failedFrames:Number(vision.failed||0),
               standupConfirmed:vision.standupConfirmed===true?true:null,
-              visualSource:'server_ffmpeg_qwen_frames'
+              confirmedRespondentCount:Number.isInteger(vision.confirmedRespondentCount)?vision.confirmedRespondentCount:null,
+              cutawaysConfirmed:vision.cutawaysConfirmed===true?true:null,
+              shotVariety:vision.shotVariety||'unknown',
+              visualAlternationConfirmed:vision.visualAlternationConfirmed===true?true:null,
+              globalVisionAvailable:Boolean(vision.globalVision),
+              globalVisionEvidence:compactGlobalEvidence(vision.globalVision),
+              visualSource:'server_ffmpeg_qwen_frames_global_sequence'
             });
             body.mediaObservations=enrich(body.mediaObservations);
             body.videoObservations=enrich(body.videoObservations);
@@ -93,7 +110,12 @@
       logo:0,
       locationText:0,
       frames:[],
-      standupConfirmed:null
+      standupConfirmed:null,
+      confirmedRespondentCount:null,
+      cutawaysConfirmed:null,
+      shotVariety:'unknown',
+      visualAlternationConfirmed:null,
+      globalVision:null
     };
     setNote(`<b>Облачный визуальный анализ пока недоступен.</b><br>${message} Проверка речи продолжит работать, а визуальные пункты должны остаться «не удалось определить».`);
   }
@@ -198,6 +220,41 @@
       const failed=results.length-good.length;
       const standupFrames=good.filter(item=>strongStandup(item.analysis));
 
+      let globalVision=null;
+      let globalVisionError='';
+
+      const globalFrames=sourceFrames
+        .filter(frame=>!frame?.error&&frame?.imageBase64)
+        .map((frame,index)=>({
+          index:Number.isFinite(Number(frame?.index))?Number(frame.index):index,
+          timeSeconds:Number.isFinite(Number(frame?.timeSeconds))?Number(frame.timeSeconds):null,
+          imageBase64:frame.imageBase64,
+          mimeType:frame.mimeType||'image/jpeg'
+        }));
+
+      if(globalFrames.length>=2){
+        setNote(`<b>Облачный визуальный анализ.</b><br>Qwen обработал ${good.length} отдельных кадров. Теперь сопоставляет ${globalFrames.length} кадров между собой: людей, стендап, перебивки и визуальную последовательность…`);
+
+        try{
+          const globalResponse=await api({
+            action:'videoGlobalVision',
+            frames:globalFrames
+          });
+          globalVision=globalResponse?.analysis||null;
+        }catch(error){
+          globalVisionError=error?.message||'Не удалось выполнить общий анализ последовательности.';
+          console.warn('V-CHECK global vision failed:',error);
+        }
+      }
+
+      if(myRun!==runId)return;
+
+      const globalStandup=globalVision?.standupConfirmed===true?true:null;
+      const globalCount=Number(globalVision?.confirmedRespondentCount);
+      const confirmedRespondentCount=Number.isInteger(globalCount)&&globalCount>=8?globalCount:null;
+      const cutawaysConfirmed=globalVision?.cutawaysConfirmed===true?true:null;
+      const visualAlternationConfirmed=globalVision?.visualAlternationConfirmed===true?true:null;
+
       const vision={
         checked:String(good.length),
         failed,
@@ -216,7 +273,13 @@
         subtitles:good.filter(item=>item.analysis?.subtitlesVisible===true||item.analysis?.otherTextVisible===true).length,
         logo:good.filter(item=>item.analysis?.logoVisible===true).length,
         locationText:good.filter(item=>item.analysis?.locationTextVisible===true).length,
-        standupConfirmed:standupFrames.length>0?true:null,
+        standupConfirmed:globalStandup===true||standupFrames.length>0?true:null,
+        confirmedRespondentCount,
+        cutawaysConfirmed,
+        shotVariety:globalVision?.shotVariety||'unknown',
+        visualAlternationConfirmed,
+        globalVision,
+        globalVisionError:globalVisionError||null,
         frames:results
       };
 
@@ -236,10 +299,19 @@
       };
 
       const standupText=vision.standupConfirmed===true
-        ?' · найден сильный визуальный признак стендапа'
-        :' · стендап не подтверждаем без сильных признаков';
+        ?' · стендап подтверждён визуальным анализом'
+        :' · стендап не подтверждён без достаточных признаков';
+      const countText=vision.confirmedRespondentCount
+        ?` · подтверждено респондентов: ${vision.confirmedRespondentCount}`
+        :' · число уникальных респондентов не подтверждено';
+      const cutawayText=vision.cutawaysConfirmed===true
+        ?' · перебивки подтверждены'
+        :' · перебивки не подтверждены';
+      const globalText=globalVision
+        ?' · общий анализ последовательности готов'
+        :` · общий анализ последовательности не завершён${globalVisionError?`: ${globalVisionError}`:''}`;
 
-      setNote(`<b>Облачный визуальный анализ готов.</b><br>Qwen обработал ${good.length} из ${sourceFrames.length} серверных стоп-кадров${failed?` · ошибок: ${failed}`:''}${standupText}.`);
+      setNote(`<b>Облачный визуальный анализ готов.</b><br>Qwen обработал ${good.length} из ${sourceFrames.length} серверных стоп-кадров${failed?` · ошибок: ${failed}`:''}${globalText}${standupText}${countText}${cutawayText}.`);
 
     }catch(error){
       if(myRun!==runId)return;
