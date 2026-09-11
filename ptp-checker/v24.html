@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>MMT V-CHECK</title>
+<style>
+html,body{margin:0;width:100%;height:100%;background:#f4f6fa;font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+#app{border:0;width:100%;height:100%;display:block;background:#f4f6fa}
+#loading{position:fixed;inset:0;display:grid;place-items:center;background:#f4f6fa;z-index:1000}
+#loadingBox{background:#fff;border:1px solid #e5e7eb;border-radius:18px;padding:20px 24px;box-shadow:0 12px 34px rgba(15,23,42,.08);max-width:460px;text-align:center;color:#111827}
+#loadingBox b{display:block;font-size:18px;margin-bottom:6px}
+#loadingBox span{display:block;color:#667085;font-size:14px;line-height:1.45}
+</style>
+</head>
+<body>
+<div id="loading"><div id="loadingBox"><b>Открываем MMT V-CHECK…</b><span>Загружаем рабочую форму.</span></div></div>
+<iframe id="app" title="MMT V-CHECK"></iframe>
+<script>
+(function(){
+  const frame=document.getElementById('app');
+  const loading=document.getElementById('loading');
+  const loadingBox=document.getElementById('loadingBox');
+  let initialized=false;
+
+  function loadScript(src,timeout=8000){
+    return new Promise(resolve=>{
+      const s=document.createElement('script');
+      let done=false;
+      const finish=ok=>{if(done)return;done=true;clearTimeout(timer);resolve(ok)};
+      s.src=src;
+      s.async=false;
+      s.onload=()=>finish(true);
+      s.onerror=()=>finish(false);
+      const timer=setTimeout(()=>finish(false),timeout);
+      document.body.appendChild(s);
+    });
+  }
+
+  async function initModules(){
+    if(initialized)return;
+    const d=frame.contentDocument;
+    if(!d || !d.getElementById('form'))return;
+    initialized=true;
+
+    // Сначала показываем настоящую страницу в iframe: нативные select/input
+    // остаются полностью кликабельными и не перекрываются оболочкой.
+    loading.style.display='none';
+
+    const modules=[
+      './v3-app-v9.js?v=24',
+      './v3-audio-v10.js?v=24',
+      './v3-video-frames-v17.js?v=24',
+      './v3-video-vision-v16.js?v=24',
+      './v3-copy-v10.js?v=24'
+    ];
+
+    for(const src of modules)await loadScript(src);
+
+    // Модули подписываются на load iframe, поэтому после их подключения
+    // даём им одно синтетическое событие инициализации.
+    frame.dispatchEvent(new Event('load'));
+
+    // Необязательные библиотеки для DOCX/PDF загружаются в фоне и не
+    // перекрывают интерфейс.
+    setTimeout(async()=>{
+      await loadScript('https://cdn.jsdelivr.net/npm/pdfmake@0.2.10/build/pdfmake.min.js',6000);
+      await loadScript('https://cdn.jsdelivr.net/npm/pdfmake@0.2.10/build/vfs_fonts.js',6000);
+      await loadScript('./v3-polish-v11.js?v=24',6000);
+      frame.dispatchEvent(new Event('load'));
+    },300);
+  }
+
+  frame.addEventListener('load',()=>{initModules().catch(console.error)});
+  frame.src='./index.html?v=24';
+
+  setTimeout(()=>{
+    if(!initialized && loadingBox){
+      loadingBox.innerHTML='<b>V-CHECK загружается дольше обычного</b><span>Если сообщение не исчезнет через несколько секунд, обновите страницу.</span>';
+    }
+  },10000);
+})();
+</script>
+</body>
+</html>
