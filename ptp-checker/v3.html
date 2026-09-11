@@ -13,7 +13,7 @@ iframe{border:0;width:100%;height:100%;display:block}
 </head>
 <body>
 <div id="boot">Загружаем MMT V-CHECK…</div>
-<iframe id="app" src="about:blank" title="MMT V-CHECK"></iframe>
+<iframe id="app" title="MMT V-CHECK"></iframe>
 <script src="./v3-audio-v10.js?v=18"></script>
 <script src="./v3-video-frames-v17.js?v=18"></script>
 <script src="./v3-video-vision-v16.js?v=18"></script>
@@ -23,6 +23,7 @@ iframe{border:0;width:100%;height:100%;display:block}
 (function(){
   const app=document.getElementById('app');
   const boot=document.getElementById('boot');
+  let appStarted=false;
 
   function loadScript(targetDoc,src){
     return new Promise((resolve,reject)=>{
@@ -51,7 +52,12 @@ iframe{border:0;width:100%;height:100%;display:block}
       .catch(()=>{});
   }
 
-  app.addEventListener('load',()=>{
+  function onAppLoad(){
+    const d=app.contentDocument;
+    // Игнорируем служебный первый about:blank у iframe.
+    if(appStarted||!d||d.title!=='MMT V-CHECK'||!d.getElementById('form'))return;
+    appStarted=true;
+
     if(boot)boot.hidden=true;
 
     const s=document.createElement('script');
@@ -59,7 +65,9 @@ iframe{border:0;width:100%;height:100%;display:block}
     document.body.appendChild(s);
 
     setTimeout(loadOptionalLibraries,0);
-  },{once:true});
+  }
+
+  app.addEventListener('load',onAppLoad);
 
   fetch('./index.html?v=18',{cache:'no-store'})
     .then(r=>{
