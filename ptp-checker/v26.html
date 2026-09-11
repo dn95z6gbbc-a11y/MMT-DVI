@@ -6,7 +6,7 @@
 <title>MMT V-CHECK</title>
 <style>
 html,body{margin:0;width:100%;height:100%;background:#f4f6fa;font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
-#app{border:0;width:100%;height:100%;display:block;background:#f4f6fa}
+#app{border:0;width:100%;height:100%;display:none;background:#f4f6fa}
 #loading{position:fixed;inset:0;display:grid;place-items:center;background:#f4f6fa;z-index:1000}
 #loadingBox{background:#fff;border:1px solid #e5e7eb;border-radius:18px;padding:20px 24px;box-shadow:0 12px 34px rgba(15,23,42,.08);max-width:460px;text-align:center;color:#111827}
 #loadingBox b{display:block;font-size:18px;margin-bottom:6px}
@@ -14,10 +14,10 @@ html,body{margin:0;width:100%;height:100%;background:#f4f6fa;font-family:system-
 </style>
 </head>
 <body>
-<div id="loading"><div id="loadingBox"><b>Открываем MMT V-CHECK…</b><span>Запускаем только форму. ИИ-модули подключатся после выбора файла.</span></div></div>
+<div id="loading"><div id="loadingBox"><b>Открываем MMT V-CHECK…</b><span>Сначала запускаем только форму. ИИ-модули подключатся после выбора файла.</span></div></div>
 <iframe id="app" title="MMT V-CHECK"></iframe>
 <script>
-(function(){
+(async function(){
   const frame=document.getElementById('app');
   const loading=document.getElementById('loading');
   const loadingBox=document.getElementById('loadingBox');
@@ -44,7 +44,6 @@ html,body{margin:0;width:100%;height:100%;background:#f4f6fa;font-family:system-
     try{
       const isVideo=String(file.type||'').startsWith('video/')||/\.(mp4|mov|m4v|webm)$/i.test(file.name||'');
       const isAudio=String(file.type||'').startsWith('audio/')||/\.(mp3|wav|m4a|aac|ogg)$/i.test(file.name||'');
-
       const modules=['./v3-app-v9.js?v=26'];
       if(isVideo){
         modules.push('./v3-video-frames-v17.js?v=26');
@@ -53,15 +52,9 @@ html,body{margin:0;width:100%;height:100%;background:#f4f6fa;font-family:system-
         modules.push('./v3-audio-v10.js?v=26');
       }
       modules.push('./v3-copy-v10.js?v=26');
-
       for(const src of modules)await parentScript(src,7000);
-
-      // Модули подписались на load iframe — инициализируем их один раз.
       frame.dispatchEvent(new Event('load'));
       modulesReady=true;
-
-      // Выбор файла произошёл до подключения модулей. Повторяем только
-      // событие change, чтобы видео/аудио-модули увидели уже выбранный файл.
       const d=frame.contentDocument;
       const input=d?.getElementById('materialFile');
       if(input)input.dispatchEvent(new Event('change',{bubbles:true}));
@@ -70,17 +63,33 @@ html,body{margin:0;width:100%;height:100%;background:#f4f6fa;font-family:system-
     }
   }
 
-  frame.addEventListener('load',()=>{
-    const d=frame.contentDocument;
-    if(!d||!d.getElementById('form'))return;
+  try{
+    const controller=new AbortController();
+    const timer=setTimeout(()=>controller.abort(),8000);
+    const r=await fetch('./index.html?core=26-'+Date.now(),{cache:'no-store',signal:controller.signal});
+    clearTimeout(timer);
+    if(!r.ok)throw new Error('Не удалось загрузить основу приложения.');
+    let html=await r.text();
 
+    // Убираем тяжёлые внешние библиотеки из первого запуска Safari.
+    html=html.replace(/<script src="https:\/\/cdn\.jsdelivr\.net\/npm\/mammoth[^>]*><\/script>/g,'');
+    html=html.replace(/<script src="https:\/\/cdn\.jsdelivr\.net\/npm\/html2pdf[^>]*><\/script>/g,'');
+
+    const d=frame.contentDocument;
+    d.open();
+    d.write(html);
+    d.close();
+
+    if(!d.getElementById('form'))throw new Error('Форма V-CHECK не запустилась.');
+
+    frame.style.display='block';
     loading.style.display='none';
 
-    // Никаких тяжёлых модулей на вводе имени, выборе группы, формата,
-    // чекбоксе питча и заполнении аннотации.
-    if(d.documentElement.dataset.vcheck26==='1')return;
-    d.documentElement.dataset.vcheck26='1';
+    const group=d.getElementById('group');
+    if(group)group.innerHTML='<option value="">— выберите группу —</option><option>Ж501-311</option><option>Ж502-311</option><option>Ж503-311</option>';
 
+    // Ключевая правка v26: выбор формата НЕ запускает ИИ-модули.
+    // Имя, группа, чекбокс, аннотация и остальные поля остаются лёгкими.
     d.addEventListener('change',event=>{
       const input=event.target;
       if(input?.id!=='materialFile')return;
@@ -88,17 +97,10 @@ html,body{margin:0;width:100%;height:100%;background:#f4f6fa;font-family:system-
       if(!file)return;
       setTimeout(()=>loadModulesForFile(file).catch(console.error),300);
     },true);
-  });
 
-  // Загружаем обычный index.html как настоящую страницу iframe.
-  // Никаких srcdoc/document.write и никаких внешних PDF-библиотек на старте.
-  frame.src='./index.html?v=26';
-
-  setTimeout(()=>{
-    if(loading.style.display!=='none' && loadingBox){
-      loadingBox.innerHTML='<b>V-CHECK загружается дольше обычного</b><span>Обновите страницу один раз.</span>';
-    }
-  },10000);
+  }catch(err){
+    loadingBox.innerHTML='<b>Не удалось открыть V-CHECK</b><span>'+String(err&&err.message||err)+'</span>';
+  }
 })();
 </script>
 </body>
