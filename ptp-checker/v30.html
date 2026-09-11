@@ -60,20 +60,20 @@ html,body{margin:0;width:100%;height:100%;background:#f4f6fa;font-family:system-
     frame.style.display='block';
     loading.style.display='none';
 
-    const coverage=await childScript('./video-24-frames-v1.js?v=40-consistency',10000);
-    const contactSheets=await childScript('./video-global-contactsheet-v2.js?v=40-consistency',10000);
-    const cloud=await childScript('./v29-cloud-vision.js?v=40-consistency',10000);
-    const timeline=await childScript('./video-timeline-v1.js?v=40-consistency',10000);
-    const respondents=await childScript('./video-respondent-targeting-v2.js?v=40-consistency',10000);
-    const consistency=await childScript('./video-report-consistency-v1.js?v=40-consistency',10000);
-    const unified=await childScript('./video-unified-report-v4.js?v=40-consistency',10000);
+    const coverage=await childScript('./video-24-frames-v1.js?v=41-answer-duration',10000);
+    const contactSheets=await childScript('./video-global-contactsheet-v2.js?v=41-answer-duration',10000);
+    const cloud=await childScript('./v29-cloud-vision.js?v=41-answer-duration',10000);
+    const timeline=await childScript('./video-timeline-v1.js?v=41-answer-duration',10000);
+    const answerDuration=await childScript('./video-answer-duration-v1.js?v=41-answer-duration',10000);
+    const consistency=await childScript('./video-report-consistency-v1.js?v=41-answer-duration',10000);
+    const unified=await childScript('./video-unified-report-v4.js?v=41-answer-duration',10000);
     const polish=await childScript('./v30-polish.js?v=30',10000);
 
     if(!coverage)console.warn('V-CHECK 24-frame coverage bridge did not load');
-    if(!contactSheets)console.warn('V-CHECK episode-aware contact-sheet bridge did not load');
+    if(!contactSheets)console.warn('V-CHECK contact-sheet bridge did not load');
     if(!cloud)console.warn('V-CHECK cloud vision bridge did not load');
     if(!timeline)console.warn('V-CHECK video timeline bridge did not load');
-    if(!respondents)console.warn('V-CHECK respondent-targeting v2 bridge did not load');
+    if(!answerDuration)console.warn('V-CHECK answer-duration bridge did not load');
     if(!consistency)console.warn('V-CHECK report consistency bridge did not load');
     if(!unified)console.warn('V-CHECK unified report did not load');
     if(!polish)console.warn('V-CHECK polish did not load');
