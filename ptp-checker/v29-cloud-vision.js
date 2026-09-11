@@ -40,7 +40,7 @@
     note=document.createElement('div');
     note.id='cloudVisionNote';
     note.style.cssText='margin-top:14px;border:1px solid #bfdbfe;background:#eff6ff;color:#1e3a8a;border-radius:14px;padding:12px 14px;font-size:13px;line-height:1.45';
-    note.innerHTML='<b>Облачный визуальный анализ.</b><br>Видео не декодируется по кадрам в Safari. V-CHECK получает готовые стоп-кадры из Yandex Cloud Video и отправляет их Qwen через сервер.';
+    note.innerHTML='<b>Облачный визуальный анализ.</b><br>Видео не декодируется по кадрам в Safari. V-CHECK вырезает 8 стоп-кадров на сервере через FFmpeg и отправляет их Qwen.';
     materialBox.insertAdjacentElement('afterend',note);
     return note;
   }
@@ -68,7 +68,7 @@
               processedFrames:Number(vision.checked||0),
               failedFrames:Number(vision.failed||0),
               standupConfirmed:vision.standupConfirmed===true?true:null,
-              visualSource:'yandex_cloud_video_screenshots'
+              visualSource:'server_ffmpeg_qwen_frames'
             });
             body.mediaObservations=enrich(body.mediaObservations);
             body.videoObservations=enrich(body.videoObservations);
@@ -82,7 +82,7 @@
 
   function fallbackVision(message){
     window.__VCHECK_VIDEO_FRAMES_STATE__={running:false,target:TARGET_FRAMES,done:TARGET_FRAMES,failed:TARGET_FRAMES};
-    window.__VCHECK_VIDEO_FRAMES__=Array.from({length:TARGET_FRAMES},(_,index)=>({index,timeSeconds:null,cloud:true}));
+    window.__VCHECK_VIDEO_FRAMES__=Array.from({length:TARGET_FRAMES},(_,index)=>({index,timeSeconds:null,cloud:true,server:true}));
     window.VCHECK_VIDEO_VISION={
       checked:'0',
       failed:TARGET_FRAMES,
@@ -96,16 +96,6 @@
       standupConfirmed:null
     };
     setNote(`<b>Облачный визуальный анализ пока недоступен.</b><br>${message} Проверка речи продолжит работать, а визуальные пункты должны остаться «не удалось определить».`);
-  }
-
-  function evenIndexes(count,target=TARGET_FRAMES){
-    if(!Number.isFinite(count)||count<=0)return [];
-    if(count<=target)return Array.from({length:count},(_,index)=>index);
-    const chosen=new Set();
-    for(let i=0;i<target;i++){
-      chosen.add(Math.round(i*(count-1)/(target-1)));
-    }
-    return [...chosen].sort((a,b)=>a-b);
   }
 
   function strongStandup(analysis){
@@ -133,52 +123,63 @@
     window.__VCHECK_VIDEO_FRAMES_STATE__={running:true,target:TARGET_FRAMES,done:0,failed:0};
     window.__VCHECK_VIDEO_FRAMES__=[];
     window.VCHECK_VIDEO_VISION=null;
-    setNote('<b>Облачный визуальный анализ.</b><br>Получаем список стоп-кадров из Yandex Cloud Video… Safari сам видео по кадрам не декодирует.');
+    setNote(`<b>Облачный визуальный анализ.</b><br>Сервер готовит ${TARGET_FRAMES} равномерных стоп-кадров через FFmpeg… Safari сам видео по кадрам не декодирует.`);
 
     try{
-      const probe=await api({action:'videoProbe',videoId});
+      const extracted=await api({
+        action:'extractVideoFrames',
+        videoId,
+        count:TARGET_FRAMES,
+        includeBase64:true
+      });
       if(myRun!==runId)return;
 
-      const screenshots=Array.isArray(probe.screenshots)?probe.screenshots:[];
-      const indices=evenIndexes(screenshots.length,TARGET_FRAMES);
-      if(!indices.length){
-        throw new Error('Cloud Video пока не вернул готовые стоп-кадры.');
+      const sourceFrames=Array.isArray(extracted.frames)?extracted.frames:[];
+      if(!sourceFrames.length){
+        throw new Error('Сервер не вернул стоп-кадры видео.');
       }
 
-      setNote(`<b>Облачный визуальный анализ.</b><br>Cloud Video подготовил ${screenshots.length} кадров. Qwen анализирует ${indices.length} равномерно выбранных кадров…`);
+      const extractionFailures=sourceFrames.filter(frame=>frame?.error||!frame?.imageBase64).length;
+      setNote(`<b>Облачный визуальный анализ.</b><br>FFmpeg подготовил ${sourceFrames.length-extractionFailures} из ${sourceFrames.length} кадров. Qwen начинает визуальный анализ…`);
 
-      const results=new Array(indices.length);
+      const results=new Array(sourceFrames.length);
       let next=0;
       let done=0;
 
       async function worker(){
         while(true){
           const position=next++;
-          if(position>=indices.length)return;
-          const screenshotIndex=indices[position];
+          if(position>=sourceFrames.length)return;
+          const frame=sourceFrames[position]||{};
+
           try{
+            if(frame.error||!frame.imageBase64){
+              throw new Error(frame.error||'FFmpeg не вернул изображение кадра');
+            }
+
             const response=await api({
               action:'videoVision',
-              videoId,
-              screenshotIndex
+              imageBase64:frame.imageBase64,
+              mimeType:frame.mimeType||'image/jpeg'
             });
+
             results[position]={
-              index:screenshotIndex,
-              time:null,
+              index:Number.isFinite(Number(frame.index))?Number(frame.index):position,
+              time:Number.isFinite(Number(frame.timeSeconds))?Number(frame.timeSeconds):null,
               analysis:response.analysis||null,
               model:response.model||null,
-              imageBytes:response.imageBytes||null
+              imageBytes:response.imageBytes||frame.bytes||null
             };
           }catch(error){
             results[position]={
-              index:screenshotIndex,
-              time:null,
+              index:Number.isFinite(Number(frame.index))?Number(frame.index):position,
+              time:Number.isFinite(Number(frame.timeSeconds))?Number(frame.timeSeconds):null,
               error:error?.message||'Ошибка анализа кадра'
             };
           }finally{
             done++;
             if(myRun===runId){
-              setNote(`<b>Облачный визуальный анализ.</b><br>Qwen обработал ${done} из ${indices.length} выбранных кадров… Safari остаётся свободным.`);
+              setNote(`<b>Облачный визуальный анализ.</b><br>Qwen обработал ${done} из ${sourceFrames.length} серверных стоп-кадров… Safari остаётся свободным.`);
             }
           }
         }
@@ -186,7 +187,7 @@
 
       await Promise.all(
         Array.from(
-          {length:Math.min(MAX_CONCURRENCY,indices.length)},
+          {length:Math.min(MAX_CONCURRENCY,sourceFrames.length)},
           ()=>worker()
         )
       );
@@ -200,8 +201,10 @@
       const vision={
         checked:String(good.length),
         failed,
-        selectedScreenshots:indices.length,
-        sourceScreenshots:screenshots.length,
+        selectedFrames:sourceFrames.length,
+        sourceFrames:sourceFrames.length,
+        selectedScreenshots:sourceFrames.length,
+        sourceScreenshots:sourceFrames.length,
         counts:{
           standup:good.filter(item=>item.analysis?.frameType==='standup').length,
           interview:good.filter(item=>item.analysis?.frameType==='interview').length,
@@ -219,16 +222,16 @@
 
       window.VCHECK_VIDEO_VISION=vision;
 
-      // Старый unified-report ждёт массив из минимум шести кадров. Передаём
-      // только лёгкие метаданные-заглушки — без Blob и декодирования MP4.
-      window.__VCHECK_VIDEO_FRAMES__=Array.from(
-        {length:TARGET_FRAMES},
-        (_,index)=>({index,timeSeconds:null,cloud:true})
-      );
+      window.__VCHECK_VIDEO_FRAMES__=sourceFrames.map((frame,index)=>({
+        index:Number.isFinite(Number(frame?.index))?Number(frame.index):index,
+        timeSeconds:Number.isFinite(Number(frame?.timeSeconds))?Number(frame.timeSeconds):null,
+        cloud:true,
+        server:true
+      }));
       window.__VCHECK_VIDEO_FRAMES_STATE__={
         running:false,
         target:TARGET_FRAMES,
-        done:TARGET_FRAMES,
+        done:sourceFrames.length,
         failed
       };
 
@@ -236,11 +239,11 @@
         ?' · найден сильный визуальный признак стендапа'
         :' · стендап не подтверждаем без сильных признаков';
 
-      setNote(`<b>Облачный визуальный анализ готов.</b><br>Qwen обработал ${good.length} из ${indices.length} выбранных стоп-кадров${failed?` · ошибок: ${failed}`:''}${standupText}.`);
+      setNote(`<b>Облачный визуальный анализ готов.</b><br>Qwen обработал ${good.length} из ${sourceFrames.length} серверных стоп-кадров${failed?` · ошибок: ${failed}`:''}${standupText}.`);
 
     }catch(error){
       if(myRun!==runId)return;
-      fallbackVision(error?.message||'Не удалось получить облачные стоп-кадры.');
+      fallbackVision(error?.message||'Не удалось получить серверные стоп-кадры.');
     }
   }
 
