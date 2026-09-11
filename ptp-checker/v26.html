@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>MMT V-CHECK</title>
+<style>
+html,body{margin:0;width:100%;height:100%;background:#f4f6fa;font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+#app{border:0;width:100%;height:100%;display:block;background:#f4f6fa}
+#loading{position:fixed;inset:0;display:grid;place-items:center;background:#f4f6fa;z-index:1000}
+#loadingBox{background:#fff;border:1px solid #e5e7eb;border-radius:18px;padding:20px 24px;box-shadow:0 12px 34px rgba(15,23,42,.08);max-width:460px;text-align:center;color:#111827}
+#loadingBox b{display:block;font-size:18px;margin-bottom:6px}
+#loadingBox span{display:block;color:#667085;font-size:14px;line-height:1.45}
+</style>
+</head>
+<body>
+<div id="loading"><div id="loadingBox"><b>Открываем MMT V-CHECK…</b><span>Запускаем только форму. ИИ-модули подключатся после выбора файла.</span></div></div>
+<iframe id="app" title="MMT V-CHECK"></iframe>
+<script>
+(function(){
+  const frame=document.getElementById('app');
+  const loading=document.getElementById('loading');
+  const loadingBox=document.getElementById('loadingBox');
+  let modulesLoading=false;
+  let modulesReady=false;
+
+  function parentScript(src,timeout=7000){
+    return new Promise(resolve=>{
+      const s=document.createElement('script');
+      let done=false;
+      const finish=ok=>{if(done)return;done=true;clearTimeout(timer);resolve(ok)};
+      s.src=src;
+      s.async=false;
+      s.onload=()=>finish(true);
+      s.onerror=()=>finish(false);
+      const timer=setTimeout(()=>finish(false),timeout);
+      document.body.appendChild(s);
+    });
+  }
+
+  async function loadModulesForFile(file){
+    if(modulesReady||modulesLoading||!file)return;
+    modulesLoading=true;
+    try{
+      const isVideo=String(file.type||'').startsWith('video/')||/\.(mp4|mov|m4v|webm)$/i.test(file.name||'');
+      const isAudio=String(file.type||'').startsWith('audio/')||/\.(mp3|wav|m4a|aac|ogg)$/i.test(file.name||'');
+
+      const modules=['./v3-app-v9.js?v=26'];
+      if(isVideo){
+        modules.push('./v3-video-frames-v17.js?v=26');
+        modules.push('./v3-video-vision-v16.js?v=26');
+      }else if(isAudio){
+        modules.push('./v3-audio-v10.js?v=26');
+      }
+      modules.push('./v3-copy-v10.js?v=26');
+
+      for(const src of modules)await parentScript(src,7000);
+
+      // Модули подписались на load iframe — инициализируем их один раз.
+      frame.dispatchEvent(new Event('load'));
+      modulesReady=true;
+
+      // Выбор файла произошёл до подключения модулей. Повторяем только
+      // событие change, чтобы видео/аудио-модули увидели уже выбранный файл.
+      const d=frame.contentDocument;
+      const input=d?.getElementById('materialFile');
+      if(input)input.dispatchEvent(new Event('change',{bubbles:true}));
+    }finally{
+      modulesLoading=false;
+    }
+  }
+
+  frame.addEventListener('load',()=>{
+    const d=frame.contentDocument;
+    if(!d||!d.getElementById('form'))return;
+
+    loading.style.display='none';
+
+    // Никаких тяжёлых модулей на вводе имени, выборе группы, формата,
+    // чекбоксе питча и заполнении аннотации.
+    if(d.documentElement.dataset.vcheck26==='1')return;
+    d.documentElement.dataset.vcheck26='1';
+
+    d.addEventListener('change',event=>{
+      const input=event.target;
+      if(input?.id!=='materialFile')return;
+      const file=input.files?.[0];
+      if(!file)return;
+      setTimeout(()=>loadModulesForFile(file).catch(console.error),300);
+    },true);
+  });
+
+  // Загружаем обычный index.html как настоящую страницу iframe.
+  // Никаких srcdoc/document.write и никаких внешних PDF-библиотек на старте.
+  frame.src='./index.html?v=26';
+
+  setTimeout(()=>{
+    if(loading.style.display!=='none' && loadingBox){
+      loadingBox.innerHTML='<b>V-CHECK загружается дольше обычного</b><span>Обновите страницу один раз.</span>';
+    }
+  },10000);
+})();
+</script>
+</body>
+</html>
