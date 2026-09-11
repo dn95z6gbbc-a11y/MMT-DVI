@@ -1,9 +1,10 @@
 (() => {
   const API_URL = 'https://functions.yandexcloud.net/d4ejdq5v5too7egeop63';
-  const WINDOW_SECONDS = 8;
+  const WINDOW_SECONDS = 5;
+  const MAX_SPEECH_PER_FRAME = 3;
 
   if (window.__VCHECK_VIDEO_TIMELINE_V1__) return;
-  window.__VCHECK_VIDEO_TIMELINE_V1__ = '1.0';
+  window.__VCHECK_VIDEO_TIMELINE_V1__ = '1.1';
 
   const nativeFetch = window.fetch.bind(window);
   let subtitleSegments = [];
@@ -45,6 +46,17 @@
       .filter(Boolean);
   }
 
+  function distanceToSegment(segment, time) {
+    if (segment.startSeconds <= time && segment.endSeconds >= time) {
+      return 0;
+    }
+
+    return Math.min(
+      Math.abs(segment.startSeconds - time),
+      Math.abs(segment.endSeconds - time)
+    );
+  }
+
   function speechAround(timeSeconds) {
     const time = Number(timeSeconds);
     if (!Number.isFinite(time)) return [];
@@ -57,11 +69,16 @@
         segment.endSeconds >= from &&
         segment.startSeconds <= to
       )
-      .slice(0, 10)
+      .sort(
+        (a, b) =>
+          distanceToSegment(a, time) -
+          distanceToSegment(b, time)
+      )
+      .slice(0, MAX_SPEECH_PER_FRAME)
       .map(segment => ({
         startSeconds: segment.startSeconds,
         endSeconds: segment.endSeconds,
-        text: segment.text,
+        text: segment.text.slice(0, 220),
         activeAtFrame:
           segment.startSeconds <= time &&
           segment.endSeconds >= time
@@ -92,20 +109,52 @@
           journalistLikelySpeakingToCamera:
             frame?.journalistLikelySpeakingToCamera || 'unknown',
           visualDescription:
-            String(frame?.visualDescription || '').trim(),
-          visualEvidence:
-            Array.isArray(frame?.evidence)
-              ? frame.evidence.slice(0, 4)
-              : [],
+            String(frame?.visualDescription || '')
+              .trim()
+              .slice(0, 260),
           nearbySpeech: speechAround(time)
         };
       })
       .filter(Boolean);
   }
 
+  function compactFrame(frame) {
+    if (!frame || typeof frame !== 'object') return frame;
+
+    return {
+      time: frame.time ?? frame.timeSeconds ?? null,
+      frameType: frame.frameType || 'unknown',
+      personOnCamera: frame.personOnCamera === true,
+      nameLowerThirdVisible:
+        frame.nameLowerThirdVisible === true,
+      subtitlesVisible: frame.subtitlesVisible === true,
+      logoVisible: frame.logoVisible === true,
+      locationTextVisible: frame.locationTextVisible === true,
+      shotType: frame.shotType || 'unknown',
+      journalistLikelySpeakingToCamera:
+        frame.journalistLikelySpeakingToCamera || 'unknown',
+      visualDescription:
+        String(frame.visualDescription || '')
+          .trim()
+          .slice(0, 260),
+      evidence:
+        Array.isArray(frame.evidence)
+          ? frame.evidence
+              .slice(0, 2)
+              .map(item => String(item || '').slice(0, 180))
+          : []
+    };
+  }
+
   function enrichObservations(observations) {
+    const originalFrames =
+      Array.isArray(observations?.frames)
+        ? observations.frames
+        : [];
+
     const base = {
-      ...(observations || {})
+      ...(observations || {}),
+      frames: originalFrames.map(compactFrame)
     };
 
     const timeline = buildTimeline(base);
@@ -147,11 +196,11 @@
           const timelineNote =
             `Доступна таймкодированная расшифровка: ` +
             `${subtitleSegments.length} речевых сегментов. ` +
-            `Для каждого обработанного стоп-кадра приложена речь ` +
-            `примерно за ${WINDOW_SECONDS} секунд до и после кадра. ` +
-            `Используй эту карту для сопоставления того, что видно ` +
-            `и что звучит в тот же момент. Не считай близость по времени ` +
-            `доказательством личности говорящего без дополнительных признаков.`;
+            `Для каждого стоп-кадра приложены до ${MAX_SPEECH_PER_FRAME} ближайших ` +
+            `реплик в окне примерно ±${WINDOW_SECONDS} секунд. ` +
+            `Используй карту для сопоставления изображения и речи. ` +
+            `Не считай близость по времени доказательством личности ` +
+            `говорящего без дополнительных признаков.`;
 
           body.sourceNote = [
             String(body.sourceNote || '').trim(),
@@ -202,5 +251,5 @@
     return response;
   };
 
-  console.log('V-CHECK video timeline v1 loaded');
+  console.log('V-CHECK video timeline v1.1 loaded');
 })();
