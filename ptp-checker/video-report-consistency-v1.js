@@ -2,7 +2,7 @@
   const API_URL='https://functions.yandexcloud.net/d4ejdq5v5too7egeop63';
 
   if(window.__VCHECK_REPORT_CONSISTENCY_V1__)return;
-  window.__VCHECK_REPORT_CONSISTENCY_V1__='1.1';
+  window.__VCHECK_REPORT_CONSISTENCY_V1__='1.2';
 
   const nativeFetch=window.fetch.bind(window);
 
@@ -147,6 +147,33 @@
       }
     }
 
+    const opinionCheck=checks.find(check=>{
+      const identity=textOfCheck(check);
+      return /разн.*позици|разнообраз.*мнен|different.*position|opinion.*divers/.test(identity);
+    });
+
+    const montageDialogueCheck=checks.find(check=>{
+      const identity=textOfCheck(check);
+      return /монтаж|сопостав|разговор между|alternation/.test(identity);
+    });
+
+    if(
+      opinionCheck &&
+      montageDialogueCheck &&
+      opinionCheck.status!=='ok' &&
+      montageDialogueCheck.status==='ok'
+    ){
+      if(opinionCheck.status==='unknown'){
+        montageDialogueCheck.status='unknown';
+        montageDialogueCheck.finding='Нельзя надёжно подтвердить разговор между позициями, пока сами различающиеся позиции не подтверждены.';
+        montageDialogueCheck.recommendation='Проверить монтаж и наличие действительно различающихся позиций вручную по готовому материалу.';
+      }else{
+        montageDialogueCheck.status='warning';
+        montageDialogueCheck.finding='Чередование интервью и дополнительных планов подтверждено, но заметно различающиеся позиции не подтверждены.';
+        montageDialogueCheck.recommendation='Если задача — создать разговор между позициями, усилить различия между выбранными ответами или перестроить их сопоставление.';
+      }
+    }
+
     analysis.checks=checks;
 
     const significanceNotOk=checks.some(check=>{
@@ -161,12 +188,25 @@
     }
 
     if(Array.isArray(analysis.teacherReview)){
-      analysis.teacherReview=analysis.teacherReview.filter(item=>{
+      const filtered=analysis.teacherReview.filter(item=>{
         const text=String(item||'');
         if(vision?.standupConfirmed===true && /стендап/i.test(text))return false;
         if(vision?.cutawaysConfirmed===true && /перебив/i.test(text))return false;
         if(Number.isInteger(respondentCount)&&respondentCount>=8&&/респондент/i.test(text)&&/(колич|минимум|восем|8)/i.test(text))return false;
         if(durationAnalysis?.available&&/ответ/i.test(text)&&(/8\s*[–—-]?\s*15/.test(text)||/длитель.*ответ|ответ.*секунд/i.test(text)))return false;
+        return true;
+      });
+
+      let respondentDiversitySeen=false;
+      analysis.teacherReview=filtered.filter(item=>{
+        const text=String(item||'');
+        const isRespondentDiversity=
+          /респондент/i.test(text) &&
+          /(возраст|пол\b|тип\s+аудитор|разнообраз)/i.test(text);
+
+        if(!isRespondentDiversity)return true;
+        if(respondentDiversitySeen)return false;
+        respondentDiversitySeen=true;
         return true;
       });
     }
@@ -213,5 +253,5 @@
     }
   };
 
-  console.log('V-CHECK report consistency v1.1 loaded');
+  console.log('V-CHECK report consistency v1.2 loaded');
 })();
