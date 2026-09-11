@@ -14,7 +14,7 @@ html,body{margin:0;width:100%;height:100%;background:#f4f6fa;font-family:system-
 </style>
 </head>
 <body>
-<div id="loading"><div id="loadingBox"><b>Открываем MMT V-CHECK…</b><span>Видео анализируется через облачные стоп-кадры — без декодирования в Safari.</span></div></div>
+<div id="loading"><div id="loadingBox"><b>Открываем MMT V-CHECK…</b><span>Видео анализируется через серверные стоп-кадры — без декодирования в Safari.</span></div></div>
 <iframe id="app" title="MMT V-CHECK"></iframe>
 <script>
 (async function(){
@@ -60,7 +60,7 @@ html,body{margin:0;width:100%;height:100%;background:#f4f6fa;font-family:system-
     frame.style.display='block';
     loading.style.display='none';
 
-    const cloud=await childScript('./v29-cloud-vision.js?v=30',10000);
+    const cloud=await childScript('./v29-cloud-vision.js?v=31-ffmpeg',10000);
     const unified=await childScript('./video-unified-report-v4.js?v=30',10000);
     const polish=await childScript('./v30-polish.js?v=30',10000);
 
