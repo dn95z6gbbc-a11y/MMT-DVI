@@ -197,6 +197,17 @@
   `;
   (document.head || document.documentElement).appendChild(airStyle);
 
+  // Build 81: restore the deep AI path for text formats and podcasts.
+  // This is intentionally isolated from the video engine and does not touch backend logic.
+  if (!window.__VCHECK_NONVIDEO_ENGINE_V1__) {
+    const nonvideo = document.createElement('script');
+    nonvideo.src = './nonvideo-engine-v1.js?v=81-nonvideo-restore';
+    nonvideo.async = false;
+    nonvideo.onload = () => console.log('V-CHECK non-video engine loaded');
+    nonvideo.onerror = () => console.warn('V-CHECK non-video engine did not load');
+    (document.head || document.documentElement).appendChild(nonvideo);
+  }
+
   let stopped = false;
 
   function polish(){
