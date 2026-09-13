@@ -1,7 +1,7 @@
 // V-CHECK speech-role bridge v1: enrich story analysis with standup/sync/voiceover episodes.
 (() => {
   if (window.__VCHECK_SPEECH_ROLES_V1__) return;
-  window.__VCHECK_SPEECH_ROLES_V1__ = '1.1';
+  window.__VCHECK_SPEECH_ROLES_V1__ = '1.2';
 
   const API_URL = 'https://functions.yandexcloud.net/d4ejdq5v5too7egeop63';
   const STORY_FORMATS = new Set(['story_event', 'story_theme']);
@@ -20,6 +20,39 @@
     box.innerHTML = `<b>Видео: содержательная ИИ-проверка</b><br>${String(text || '')}`;
   }
 
+  function clearDiagnostic() {
+    window.__VCHECK_SPEECH_ROLE_ERROR__ = null;
+    document.getElementById('vcheckSpeechRoleDiagnostic')?.remove();
+  }
+
+  function showDiagnostic(error, segments) {
+    const code = String(error?.message || 'speech_roles_unknown_error');
+    const status = Number.isFinite(Number(error?.status)) ? Number(error.status) : null;
+    const payload = error?.payload || null;
+
+    window.__VCHECK_SPEECH_ROLE_ERROR__ = {
+      code,
+      status,
+      segmentsCount: Array.isArray(segments) ? segments.length : 0,
+      payload,
+      at: new Date().toISOString()
+    };
+
+    console.warn('V-CHECK speech-role diagnostic:', window.__VCHECK_SPEECH_ROLE_ERROR__);
+    setProgress(`Модуль ролей речи не завершился: ${code}. Основной отчёт продолжаем собирать.`);
+
+    setTimeout(() => {
+      const root = document.getElementById('vcheckUnifiedVideoReport');
+      if (!root || document.getElementById('vcheckSpeechRoleDiagnostic')) return;
+
+      const box = document.createElement('div');
+      box.id = 'vcheckSpeechRoleDiagnostic';
+      box.style.cssText = 'margin-top:12px;border:1px solid #fecaca;background:#fff1f2;color:#991b1b;border-radius:12px;padding:11px 13px;font-size:12px;line-height:1.45';
+      box.innerHTML = `<b>Техническая диагностика V-CHECK</b><br>Модуль ролей речи: <code>${code}</code>${status ? ` · HTTP ${status}` : ''} · сегментов расшифровки: ${Array.isArray(segments) ? segments.length : 0}.`;
+      root.appendChild(box);
+    }, 1400);
+  }
+
   async function analyzeSpeechRoles(segments, mediaObservations) {
     const response = await nativeFetch(API_URL, {
       method: 'POST',
@@ -32,16 +65,23 @@
       cache: 'no-store'
     });
 
+    const rawText = await response.text();
     let raw = {};
     try {
-      raw = await response.json();
+      raw = rawText ? JSON.parse(rawText) : {};
     } catch (_) {
-      throw new Error('speech_roles_bad_response');
+      const error = new Error('speech_roles_bad_response');
+      error.status = response.status;
+      error.payload = { raw: rawText.slice(0, 1200) };
+      throw error;
     }
 
     const data = parseEnvelope(raw);
     if (!response.ok || data?.ok === false || !data?.analysis) {
-      throw new Error(data?.error || `speech_roles_http_${response.status}`);
+      const error = new Error(data?.error || `speech_roles_http_${response.status}`);
+      error.status = response.status;
+      error.payload = data;
+      throw error;
     }
 
     return data.analysis;
@@ -81,6 +121,7 @@
       return nativeFetch(input, init);
     }
 
+    clearDiagnostic();
     const observations = body.mediaObservations || body.videoObservations || {};
 
     try {
@@ -118,9 +159,10 @@
       body.sourceNote = `${String(body.sourceNote || '').trim()} Доступна отдельная структурированная карта ролей речи с таймкодами. Для требований к стендапу, количеству синхронов, числу разных спикеров и объёму закадрового текста используй поля speechRoleAnalysis, standupEpisodeCount, confirmedSyncCount, confirmedDifferentSyncSpeakers и voiceoverWordCount. speechEpisodes можно использовать для оценки порядка речевых эпизодов. Не подменяй синхроны вопросами журналиста и не считай неопределённые эпизоды подтверждёнными.`.trim();
 
       window.__VCHECK_SPEECH_ROLE_ANALYSIS__ = roles;
+      window.__VCHECK_SPEECH_ROLE_ERROR__ = null;
       setProgress('Роли речи определены. Собираем итоговый анализ сюжета…');
     } catch (error) {
-      console.warn('V-CHECK speech-role analysis failed:', error);
+      showDiagnostic(error, segments);
       body.sourceNote = `${String(body.sourceNote || '').trim()} Анализ ролей речи не завершён; не делай уверенных выводов о числе синхронов или объёме закадрового текста без других прямых данных.`.trim();
     }
 
