@@ -1,7 +1,7 @@
 // V-CHECK story diagnostic v1: expose speech-role state and recover chronology from independent structure evidence.
 (() => {
   if (window.__VCHECK_STORY_DIAGNOSTIC_V1__) return;
-  window.__VCHECK_STORY_DIAGNOSTIC_V1__ = '1.0';
+  window.__VCHECK_STORY_DIAGNOSTIC_V1__ = '1.1';
 
   const API_URL = 'https://functions.yandexcloud.net/d4ejdq5v5too7egeop63';
   const STORY_FORMATS = new Set(['story_event', 'story_theme']);
@@ -83,6 +83,9 @@
   function speechRoleSnapshot() {
     const roles = window.__VCHECK_SPEECH_ROLE_ANALYSIS__ || null;
     const error = window.__VCHECK_SPEECH_ROLE_ERROR__ || null;
+    const alignedFrames = Array.isArray(window.__VCHECK_SPEECH_ALIGNED_TIMELINE__)
+      ? window.__VCHECK_SPEECH_ALIGNED_TIMELINE__.length
+      : 0;
 
     if (roles) {
       return {
@@ -92,6 +95,7 @@
         syncCount: Number(roles?.syncCount || 0),
         differentSpeakers: Number(roles?.confirmedDifferentSyncSpeakers || 0),
         voiceoverWordCount: Number(roles?.voiceoverWordCount || 0),
+        alignedFrames,
         uncertain: Array.isArray(roles?.uncertain) ? roles.uncertain.slice(0, 4) : []
       };
     }
@@ -101,11 +105,12 @@
         state: 'error',
         code: String(error?.code || 'speech_roles_unknown_error'),
         status: error?.status || null,
-        segmentsCount: Number(error?.segmentsCount || 0)
+        segmentsCount: Number(error?.segmentsCount || 0),
+        alignedFrames
       };
     }
 
-    return { state: 'missing' };
+    return { state: 'missing', alignedFrames };
   }
 
   function mountDiagnostic(snapshot, attempt = 0) {
@@ -121,11 +126,11 @@
     box.style.cssText = 'margin-top:12px;border:1px dashed #cbd5e1;background:#f8fafc;color:#475569;border-radius:12px;padding:10px 12px;font-size:12px;line-height:1.45';
 
     if (snapshot.state === 'ready') {
-      box.innerHTML = `<b>Диагностика ролей речи</b><br>классифицировано сегментов: ${snapshot.classifiedSegments}/${snapshot.totalSegments} · синхронов: ${snapshot.syncCount} · разных спикеров: ${snapshot.differentSpeakers} · слов закадра: ${snapshot.voiceoverWordCount}${snapshot.uncertain.length ? `<br>неопределённость: ${snapshot.uncertain.join(' | ')}` : ''}`;
+      box.innerHTML = `<b>Диагностика ролей речи</b><br>классифицировано сегментов: ${snapshot.classifiedSegments}/${snapshot.totalSegments} · точечных кадров по речи: ${snapshot.alignedFrames} · синхронов: ${snapshot.syncCount} · разных спикеров: ${snapshot.differentSpeakers} · слов закадра: ${snapshot.voiceoverWordCount}${snapshot.uncertain.length ? `<br>неопределённость: ${snapshot.uncertain.join(' | ')}` : ''}`;
     } else if (snapshot.state === 'error') {
-      box.innerHTML = `<b>Диагностика ролей речи</b><br>ошибка: <code>${snapshot.code}</code>${snapshot.status ? ` · HTTP ${snapshot.status}` : ''} · сегментов: ${snapshot.segmentsCount}`;
+      box.innerHTML = `<b>Диагностика ролей речи</b><br>ошибка: <code>${snapshot.code}</code>${snapshot.status ? ` · HTTP ${snapshot.status}` : ''} · сегментов: ${snapshot.segmentsCount} · точечных кадров по речи: ${snapshot.alignedFrames}`;
     } else {
-      box.innerHTML = '<b>Диагностика ролей речи</b><br>модуль не вернул структурированный результат.';
+      box.innerHTML = `<b>Диагностика ролей речи</b><br>модуль не вернул структурированный результат · точечных кадров по речи: ${snapshot.alignedFrames}`;
     }
 
     root.appendChild(box);
@@ -156,5 +161,5 @@
     }
   };
 
-  console.log('V-CHECK story diagnostic v1.0 loaded');
+  console.log('V-CHECK story diagnostic v1.1 loaded');
 })();
