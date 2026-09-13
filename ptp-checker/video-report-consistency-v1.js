@@ -2,7 +2,7 @@
   const API_URL='https://functions.yandexcloud.net/d4ejdq5v5too7egeop63';
 
   if(window.__VCHECK_REPORT_CONSISTENCY_V1__)return;
-  window.__VCHECK_REPORT_CONSISTENCY_V1__='1.2';
+  window.__VCHECK_REPORT_CONSISTENCY_V1__='1.3';
 
   const nativeFetch=window.fetch.bind(window);
 
@@ -19,6 +19,16 @@
 
   function textOfCheck(check){
     return `${String(check?.id||'')} ${String(check?.title||'')}`.toLowerCase();
+  }
+
+  function fullTextOfCheck(check){
+    return [
+      check?.id,
+      check?.title,
+      check?.finding,
+      ...(Array.isArray(check?.evidence)?check.evidence:[]),
+      check?.recommendation
+    ].map(value=>String(value||'')).join(' ').toLowerCase();
   }
 
   function addEvidence(check,text){
@@ -82,20 +92,69 @@
     };
   }
 
+  function voiceoverCountCheck(speechRoles){
+    const count=Number(speechRoles?.voiceoverWordCount);
+    const available=
+      speechRoles &&
+      Number.isFinite(count) &&
+      Number(speechRoles?.classifiedSegments||0)>0;
+
+    if(!available){
+      return {
+        id:'voiceoverWordCount',
+        title:'250–330 слов закадрового текста',
+        status:'unknown',
+        finding:'Не удалось надёжно выделить закадровый текст журналиста и посчитать его объём.',
+        evidence:[],
+        recommendation:'Проверить объём закадрового текста по готовому материалу вручную.'
+      };
+    }
+
+    if(count>=250&&count<=330){
+      return {
+        id:'voiceoverWordCount',
+        title:'250–330 слов закадрового текста',
+        status:'ok',
+        finding:`Автоматически выделено ${count} слов закадрового текста.`,
+        evidence:[`Карта ролей речи отнесла к закадровому тексту ${count} слов.`],
+        recommendation:''
+      };
+    }
+
+    return {
+      id:'voiceoverWordCount',
+      title:'250–330 слов закадрового текста',
+      status:'warning',
+      finding:`Автоматически выделено ${count} слов закадрового текста — это вне ориентира 250–330 слов.`,
+      evidence:[`Карта ролей речи отнесла к закадровому тексту ${count} слов.`],
+      recommendation:count<250?'Добавить содержательный закадровый текст до ориентира 250–330 слов.':'Сократить закадровый текст до ориентира 250–330 слов.'
+    };
+  }
+
   function patchAnalysis(analysis){
     if(!analysis||typeof analysis!=='object')return analysis;
 
     const vision=window.VCHECK_VIDEO_VISION||{};
     const targeted=window.__VCHECK_RESPONDENT_TARGETING__||{};
     const durationAnalysis=window.__VCHECK_ANSWER_DURATION__||null;
+    const speechRoles=window.__VCHECK_SPEECH_ROLE_ANALYSIS__||null;
+    const format=String(document.getElementById('format')?.value||'');
     const checks=Array.isArray(analysis.checks)?analysis.checks:[];
     const respondentCount=
       Number.isInteger(targeted?.confirmedRespondentCount)
         ?targeted.confirmedRespondentCount
         :(Number.isInteger(vision?.confirmedRespondentCount)?vision.confirmedRespondentCount:null);
 
+    const syncCount=Number(speechRoles?.syncCount);
+    const differentSyncSpeakers=Number(speechRoles?.confirmedDifferentSyncSpeakers);
+    const speechRolesAvailable=
+      !!speechRoles &&
+      Number.isFinite(syncCount) &&
+      Number(speechRoles?.classifiedSegments||0)>0;
+
     for(const check of checks){
       const identity=textOfCheck(check);
+      const fullText=fullTextOfCheck(check);
 
       if(vision?.standupConfirmed===true && /стендап|standup/.test(identity)){
         check.status='ok';
@@ -109,6 +168,30 @@
         check.finding='Перебивки присутствуют.';
         check.recommendation='';
         addEvidence(check,'Общий визуальный анализ последовательности подтвердил наличие перебивок.');
+      }
+
+      const isSyncCountCheck=
+        /синхрон|sync/.test(identity) &&
+        /колич|минимум|три|3|count|number/.test(identity);
+
+      if(isSyncCountCheck&&speechRolesAvailable){
+        if(syncCount>=3&&differentSyncSpeakers>=3){
+          check.status='ok';
+          check.finding=`Подтверждено минимум ${syncCount} синхрона от разных спикеров.`;
+          check.recommendation='';
+          check.evidence=[
+            `Карта ролей речи выделила ${syncCount} синхрона.`,
+            `Подтверждено разных групп спикеров: ${differentSyncSpeakers}.`
+          ];
+        }else{
+          check.status='unknown';
+          check.finding='Карта ролей речи пока не дала достаточного подтверждения минимум трёх синхронов от разных спикеров.';
+          check.evidence=[
+            `Автоматически выделено синхронов: ${Number.isFinite(syncCount)?syncCount:0}.`,
+            `Разных подтверждённых групп спикеров: ${Number.isFinite(differentSyncSpeakers)?differentSyncSpeakers:0}.`
+          ];
+          check.recommendation='Проверить число синхронов и разных спикеров по готовому материалу.';
+        }
       }
 
       if(
@@ -131,6 +214,18 @@
         check.recommendation='';
         addEvidence(check,'Общий визуальный анализ подтвердил чередование интервью и дополнительных планов.');
       }
+
+      const isChronology=/хронолог|chronolog/.test(identity);
+      const chronologyWasPollutedByDuration=
+        isChronology &&
+        /хронометраж|длитель|duration|180\s*(сек|second)|минимальн.*180|162\s*(сек|second)/.test(fullText);
+
+      if(chronologyWasPollutedByDuration){
+        check.status='unknown';
+        check.finding='Хронометраж материала оценивается отдельным требованием и сам по себе не доказывает нарушение хронологии события.';
+        check.evidence=[];
+        check.recommendation='Оценить последовательность развития события отдельно от общей длительности ролика.';
+      }
     }
 
     if(durationAnalysis){
@@ -144,6 +239,19 @@
         checks[durationIndex]={...checks[durationIndex],...durationPatch};
       }else{
         checks.push(durationPatch);
+      }
+    }
+
+    if(format==='story_event'||format==='story_theme'){
+      const voiceoverPatch=voiceoverCountCheck(speechRoles);
+      const voiceoverIndex=checks.findIndex(check=>{
+        const identity=textOfCheck(check);
+        return /закадр|voiceover/.test(identity)&&/250|330|слов|word|объ[её]м|колич/.test(identity);
+      });
+      if(voiceoverIndex>=0){
+        checks[voiceoverIndex]={...checks[voiceoverIndex],...voiceoverPatch};
+      }else{
+        checks.push(voiceoverPatch);
       }
     }
 
@@ -193,6 +301,8 @@
         if(vision?.standupConfirmed===true && /стендап/i.test(text))return false;
         if(vision?.cutawaysConfirmed===true && /перебив/i.test(text))return false;
         if(Number.isInteger(respondentCount)&&respondentCount>=8&&/респондент/i.test(text)&&/(колич|минимум|восем|8)/i.test(text))return false;
+        if(speechRolesAvailable&&syncCount>=3&&differentSyncSpeakers>=3&&/синхрон/i.test(text)&&/(колич|минимум|три|3)/i.test(text))return false;
+        if(speechRoles&&Number.isFinite(Number(speechRoles.voiceoverWordCount))&&Number(speechRoles.classifiedSegments||0)>0&&/закадр/i.test(text)&&/(250|330|слов|объ[её]м|колич)/i.test(text))return false;
         if(durationAnalysis?.available&&/ответ/i.test(text)&&(/8\s*[–—-]?\s*15/.test(text)||/длитель.*ответ|ответ.*секунд/i.test(text)))return false;
         return true;
       });
@@ -253,5 +363,5 @@
     }
   };
 
-  console.log('V-CHECK report consistency v1.2 loaded');
+  console.log('V-CHECK report consistency v1.3 loaded');
 })();
