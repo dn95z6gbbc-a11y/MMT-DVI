@@ -1,7 +1,7 @@
 // V-CHECK speech-role bridge v1: enrich story analysis with standup/sync/voiceover episodes.
 (() => {
   if (window.__VCHECK_SPEECH_ROLES_V1__) return;
-  window.__VCHECK_SPEECH_ROLES_V1__ = '1.0';
+  window.__VCHECK_SPEECH_ROLES_V1__ = '1.1';
 
   const API_URL = 'https://functions.yandexcloud.net/d4ejdq5v5too7egeop63';
   const STORY_FORMATS = new Set(['story_event', 'story_theme']);
@@ -88,21 +88,34 @@
 
       const roles = await analyzeSpeechRoles(segments, observations);
 
-      const enriched = {
-        ...observations,
+      const speechEvidence = {
         speechRolesAvailable: true,
         speechRoleAnalysis: roles,
         speechEpisodes: Array.isArray(roles?.speechEpisodes) ? roles.speechEpisodes : [],
         standupEpisodeCount: Number(roles?.standupCount || 0),
         confirmedSyncCount: Number(roles?.syncCount || 0),
         confirmedDifferentSyncSpeakers: Number(roles?.confirmedDifferentSyncSpeakers || 0),
+        syncSpeakerGroups: Array.isArray(roles?.syncSpeakerGroups) ? roles.syncSpeakerGroups : [],
         voiceoverWordCount: Number(roles?.voiceoverWordCount || 0),
-        voiceoverText: String(roles?.voiceoverText || '')
+        voiceoverText: String(roles?.voiceoverText || ''),
+        classifiedSpeechSegments: Number(roles?.classifiedSegments || 0),
+        totalSpeechSegments: Number(roles?.totalSegments || segments.length),
+        speechRoleUncertain: Array.isArray(roles?.uncertain) ? roles.uncertain : []
+      };
+
+      const enriched = {
+        ...observations,
+        ...speechEvidence
       };
 
       body.mediaObservations = enriched;
       body.videoObservations = enriched;
-      body.sourceNote = `${String(body.sourceNote || '').trim()} Доступна отдельная карта ролей речи: стендапы, синхроны, закадровый текст и прочие эпизоды с таймкодами. Для требований к количеству синхронов и объёму закадрового текста используй структурированные поля speechRoleAnalysis, confirmedSyncCount, confirmedDifferentSyncSpeakers и voiceoverWordCount. Не подменяй синхроны вопросами журналиста.`.trim();
+      body.audioObservations = {
+        ...(body.audioObservations || {}),
+        ...speechEvidence
+      };
+
+      body.sourceNote = `${String(body.sourceNote || '').trim()} Доступна отдельная структурированная карта ролей речи с таймкодами. Для требований к стендапу, количеству синхронов, числу разных спикеров и объёму закадрового текста используй поля speechRoleAnalysis, standupEpisodeCount, confirmedSyncCount, confirmedDifferentSyncSpeakers и voiceoverWordCount. speechEpisodes можно использовать для оценки порядка речевых эпизодов. Не подменяй синхроны вопросами журналиста и не считай неопределённые эпизоды подтверждёнными.`.trim();
 
       window.__VCHECK_SPEECH_ROLE_ANALYSIS__ = roles;
       setProgress('Роли речи определены. Собираем итоговый анализ сюжета…');
