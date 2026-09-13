@@ -1,4 +1,4 @@
-// V-CHECK report consistency v2: hard guards for story duration, sync evidence and unsupported recommendations.
+// V-CHECK report consistency v2: hard guards for story checks and unsupported recommendations.
 (() => {
   const API_URL='https://functions.yandexcloud.net/d4ejdq5v5too7egeop63';
   const STORY_FORMATS=new Set(['story_event','story_theme']);
@@ -30,15 +30,6 @@
     return `${String(check?.id||'')} ${String(check?.title||'')}`.toLowerCase();
   }
 
-  function fullCheckText(check){
-    return [
-      check?.id,
-      check?.title,
-      check?.finding,
-      ...(Array.isArray(check?.evidence)?check.evidence:[])
-    ].map(value=>String(value||'')).join(' ').toLowerCase();
-  }
-
   function isSyncCountCheck(check){
     const text=textOf(check);
     return /синхрон|sync/.test(text)&&/колич|минимум|три|3|count|number/.test(text);
@@ -50,37 +41,92 @@
   }
 
   function isDurationCheck(check){
-    const text=textOf(check);
-    return /хронометраж|длитель|duration|timing/.test(text);
+    return /хронометраж|duration/.test(textOf(check));
   }
 
-  function isSignificanceCheck(check){
+  function isVoiceoverWordsCheck(check){
     const text=textOf(check);
-    return /обществен.*значим|значимост|significance/.test(text);
+    return /250.*330|закадр.*слов|слов.*закадр|voiceover.*word/.test(text);
   }
 
   function issueText(item){
     if(typeof item==='string')return item.split(/\s+[—–-]\s+/)[0].toLowerCase();
     if(item&&typeof item==='object'){
-      return [item.issue,item.title,item.problem,item.name,item.why,item.how]
-        .map(v=>String(v||''))
-        .join(' ')
-        .toLowerCase();
+      return [item.issue,item.title,item.problem,item.name].map(v=>String(v||'')).join(' ').toLowerCase();
     }
     return '';
+  }
+
+  function normalizeReviewKey(value){
+    const text=String(value||'').toLowerCase().replace(/ё/g,'е');
+    if(/синхрон/.test(text)&&/(три|3|колич|разн.*спик)/.test(text))return 'sync_count';
+    if(/разн.*позици|разнообраз.*мнен/.test(text))return 'opinion_diversity';
+    if(/обществен.*значим|значимост/.test(text))return 'significance';
+    if(/закадр.*слов|слов.*закадр|250.*330/.test(text))return 'voiceover_words';
+    if(/хронометраж|duration/.test(text))return 'duration';
+    return text
+      .replace(/^необходимо\s+/,'')
+      .replace(/^проверить\s+вручную:\s*/,'')
+      .replace(/^проверить\s+/,'')
+      .replace(/[«»"'`.,:;!?()—–-]/g,' ')
+      .replace(/\s+/g,' ')
+      .trim();
   }
 
   function dedupeStrings(items){
     const seen=new Set();
     return items.filter(item=>{
-      const key=String(item||'').trim().toLowerCase()
-        .replace(/^проверить\s+вручную:\s*/,'')
-        .replace(/^проверить\s+/,'');
-      if(!key)return false;
-      if(seen.has(key))return false;
+      const key=normalizeReviewKey(item);
+      if(!key||seen.has(key))return false;
       seen.add(key);
       return true;
     });
+  }
+
+  function ensureDurationCheck(analysis,format,body){
+    if(!STORY_FORMATS.has(format))return;
+    const duration=Number(body?.durationSeconds);
+    if(!Number.isFinite(duration)||duration<=0)return;
+
+    const checks=Array.isArray(analysis.checks)?analysis.checks:(analysis.checks=[]);
+    let check=checks.find(isDurationCheck);
+    if(!check){
+      check={
+        id:'duration',
+        title:'Хронометраж',
+        status:'unknown',
+        critical:true,
+        finding:'',
+        evidence:[],
+        recommendation:'',
+        scope:'metadata'
+      };
+      checks.push(check);
+    }
+
+    const min=180;
+    const max=300;
+    const rounded=Math.round(duration);
+
+    if(duration<min){
+      check.status='problem';
+      check.critical=true;
+      check.finding=`Хронометраж ниже обязательного минимума: ${rounded} сек. при требовании ${min}–${max} сек.`;
+      check.evidence=[`Фактическая длительность видео: ${rounded} секунд.`];
+      check.recommendation=`Увеличить сюжет минимум до ${min} секунд содержательным материалом, не растягивая эпизоды искусственно.`;
+    }else if(duration>max){
+      check.status='problem';
+      check.critical=true;
+      check.finding=`Хронометраж выше допустимого максимума: ${rounded} сек. при требовании ${min}–${max} сек.`;
+      check.evidence=[`Фактическая длительность видео: ${rounded} секунд.`];
+      check.recommendation=`Сократить сюжет до ${max} секунд без потери обязательных элементов.`;
+    }else{
+      check.status='ok';
+      check.critical=true;
+      check.finding=`Хронометраж соответствует требованию: ${rounded} сек.`;
+      check.evidence=[`Фактическая длительность видео: ${rounded} секунд.`];
+      check.recommendation='';
+    }
   }
 
   function rebuildFinalRecommendation(analysis){
@@ -111,35 +157,29 @@
     analysis.teacherReview=dedupeStrings([...current,...additions]);
   }
 
-  function scrubUnsupportedSummary(analysis,{syncUnknown,durationProblem}){
-    if(!analysis?.overall||typeof analysis.overall.summary!=='string')return;
-
-    let parts=analysis.overall.summary
+  function patchOverallSummary(analysis,syncUnknown){
+    if(!syncUnknown||typeof analysis?.overall?.summary!=='string')return;
+    const cleaned=analysis.overall.summary
       .split(/(?<=[.!?])\s+/)
-      .map(part=>part.trim())
-      .filter(Boolean);
-
-    if(syncUnknown){
-      parts=parts.filter(part=>{
-        const text=part.toLowerCase();
-        return !(
-          /синхрон/.test(text)&&
-          /недостат|не хватает|мало|добавить|основн.*замечан/.test(text)
-        );
-      });
-    }
-
-    if(durationProblem&&!parts.some(part=>/хронометраж|длитель/.test(part.toLowerCase()))){
-      parts.push('Подтверждено несоответствие обязательному хронометражу сюжета.');
-    }
-
-    analysis.overall.summary=parts.join(' ').trim();
+      .filter(sentence=>!/недостат.*синхрон|количеств.*синхрон|добав.*синхрон|разнообраз.*позици/i.test(sentence))
+      .join(' ')
+      .trim();
+    if(cleaned)analysis.overall.summary=cleaned;
   }
 
-  function patchAnalysis(analysis,format,request){
+  function syncOverallStatus(analysis){
+    if(!analysis?.overall||!Array.isArray(analysis?.checks))return;
+    const hasCriticalProblem=analysis.checks.some(check=>check?.critical===true&&check?.status==='problem');
+    const hasConcern=analysis.checks.some(check=>['problem','warning','unknown'].includes(check?.status));
+    analysis.overall.status=hasCriticalProblem?'problem':(hasConcern?'warning':'ok');
+  }
+
+  function patchAnalysis(analysis,format,body){
     if(!analysis||typeof analysis!=='object'||!STORY_FORMATS.has(format))return analysis;
 
-    const checks=Array.isArray(analysis.checks)?analysis.checks:[];
+    const checks=Array.isArray(analysis.checks)?analysis.checks:(analysis.checks=[]);
+    ensureDurationCheck(analysis,format,body);
+
     const roles=window.__VCHECK_SPEECH_ROLE_ANALYSIS__||null;
     const syncCount=Number(roles?.syncCount);
     const differentSpeakers=Number(roles?.confirmedDifferentSyncSpeakers);
@@ -151,38 +191,14 @@
       Number.isFinite(classifiedSegments)&&
       classifiedSegments>0;
 
-    const durationSeconds=Number(request?.durationSeconds);
-    const hasDuration=Number.isFinite(durationSeconds)&&durationSeconds>0;
-    const minDuration=180;
-    const maxDuration=300;
-    const durationProblem=hasDuration&&(durationSeconds<minDuration||durationSeconds>maxDuration);
-
-    let syncUnknown=false;
+    const syncConfirmed=reliableRoles&&syncCount>=3&&differentSpeakers>=3;
+    let syncUnknown=!syncConfirmed;
     let opinionUnknown=false;
-    let significanceUnknown=false;
+    let voiceoverUnknown=false;
 
     for(const check of checks){
-      if(isDurationCheck(check)&&hasDuration){
-        if(durationSeconds<minDuration){
-          check.status='problem';
-          check.finding='Хронометраж не соответствует требованиям формата.';
-          check.evidence=[`Длительность видео составляет ${Math.round(durationSeconds)} секунд, минимум — ${minDuration} секунд.`];
-          check.recommendation=`Увеличить длительность сюжета минимум до ${minDuration} секунд.`;
-        }else if(durationSeconds>maxDuration){
-          check.status='problem';
-          check.finding='Хронометраж не соответствует требованиям формата.';
-          check.evidence=[`Длительность видео составляет ${Math.round(durationSeconds)} секунд, максимум — ${maxDuration} секунд.`];
-          check.recommendation=`Сократить длительность сюжета до ${maxDuration} секунд или меньше.`;
-        }else{
-          check.status='ok';
-          check.finding='Хронометраж соответствует требованиям формата.';
-          check.evidence=[`Длительность видео составляет ${Math.round(durationSeconds)} секунд; допустимый диапазон — ${minDuration}–${maxDuration} секунд.`];
-          check.recommendation='';
-        }
-      }
-
       if(isSyncCountCheck(check)){
-        if(reliableRoles&&syncCount>=3&&differentSpeakers>=3){
+        if(syncConfirmed){
           check.status='ok';
           check.finding='Подтверждены минимум три синхрона от разных спикеров.';
           check.evidence=[
@@ -191,7 +207,6 @@
           ];
           check.recommendation='';
         }else{
-          syncUnknown=true;
           check.status='unknown';
           check.finding='Недостаточно структурированных данных, чтобы надёжно подтвердить минимум три синхрона от разных спикеров.';
           check.evidence=reliableRoles?[
@@ -202,39 +217,21 @@
         }
       }
 
-      if(isOpinionDiversityCheck(check)){
-        // Если сама карта речи не подтверждает хотя бы двух разных
-        // говорящих, нельзя делать вывод, что позиции одинаковые или разные.
-        if(!reliableRoles||syncCount<2||differentSpeakers<2){
-          opinionUnknown=true;
-          check.status='unknown';
-          check.evidence=[];
-          check.finding='Недостаточно подтверждённых синхронов от разных спикеров для надёжной оценки разнообразия позиций.';
-          check.recommendation='Проверить, представлены ли в готовом материале действительно различающиеся позиции спикеров.';
-        }else if(check?.status==='unknown'){
-          opinionUnknown=true;
-          check.finding=String(check.finding||'Недостаточно данных для надёжной оценки разнообразия позиций.');
-          check.recommendation='Проверить, представлены ли в готовом материале действительно различающиеся позиции спикеров.';
-        }
+      if(isOpinionDiversityCheck(check)&&syncUnknown){
+        opinionUnknown=true;
+        check.status='unknown';
+        check.evidence=[];
+        check.finding='Недостаточно подтверждённых синхронов от разных спикеров для надёжной оценки разнообразия позиций.';
+        check.recommendation='Проверить, представлены ли в готовом материале действительно различающиеся позиции спикеров.';
       }
 
-      if(isSignificanceCheck(check)&&check?.status==='ok'){
-        const basis=fullCheckText(check);
-        const broadBasis=/проблем|тенденц|последств|влияни|изменен|доступ|безопас|неравен|социальн|общественн.*явлен|значени.*за предел|опыт.*групп|городск.*сред|культурн.*политик/.test(basis);
-        const weakBasis=/много людей|привлекает|праздничн|мероприят|концерт|фестивал|культурн.*событ|проходит в городе|городск.*событ/.test(basis);
-
-        if(weakBasis&&!broadBasis){
-          significanceUnknown=true;
-          check.status='unknown';
-          check.evidence=[];
-          check.finding='Сам факт проведения городского культурного события и интерес аудитории ещё не доказывают общественную значимость сюжета.';
-          check.recommendation='Проверить и сформулировать общественно значимый ракурс: какое более широкое явление, проблему или опыт показывает этот сюжет.';
-        }
+      if(isVoiceoverWordsCheck(check)&&syncUnknown){
+        voiceoverUnknown=true;
+        check.status='unknown';
+        check.evidence=[];
+        check.finding='Точный объём закадрового текста пока нельзя считать надёжным: модуль ролей речи не подтвердил достаточное число синхронов и может относить часть речи героев к закадру.';
+        check.recommendation='Проверить объём именно журналистского закадрового текста вручную после уточнения синхронов.';
       }
-    }
-
-    if(Array.isArray(analysis.strengths)&&durationProblem){
-      analysis.strengths=analysis.strengths.filter(item=>!/хронометраж|длитель/.test(String(item||'').toLowerCase()));
     }
 
     if(Array.isArray(analysis.priorityFixes)){
@@ -242,33 +239,26 @@
         const issue=issueText(item);
         if(syncUnknown&&/синхрон|колич.*спикер|колич.*респондент/.test(issue))return false;
         if(opinionUnknown&&/разнообраз|позици|мнен/.test(issue))return false;
-        if(significanceUnknown&&/значимост|обществен/.test(issue))return false;
+        if(voiceoverUnknown&&/закадр|250|330/.test(issue))return false;
         return true;
       });
     }
 
+    patchOverallSummary(analysis,syncUnknown);
     analysis.checks=checks;
-    scrubUnsupportedSummary(analysis,{syncUnknown,durationProblem});
     syncTeacherReviewWithUnknowns(analysis);
+    syncOverallStatus(analysis);
     rebuildFinalRecommendation(analysis);
-
-    if(analysis.overall){
-      const hasCriticalProblem=checks.some(check=>check?.critical===true&&check?.status==='problem');
-      const hasProblem=checks.some(check=>check?.status==='problem');
-      const hasConcern=checks.some(check=>['warning','unknown'].includes(check?.status));
-      analysis.overall.status=hasCriticalProblem||hasProblem?'problem':(hasConcern?'warning':'ok');
-    }
-
     return analysis;
   }
 
-  function patchPayload(payload,format,request){
+  function patchPayload(payload,format,body){
     if(!payload||typeof payload!=='object')return payload;
 
     if(typeof payload.body==='string'){
       try{
         const inner=JSON.parse(payload.body);
-        if(inner?.analysis)inner.analysis=patchAnalysis(inner.analysis,format,request);
+        if(inner?.analysis)inner.analysis=patchAnalysis(inner.analysis,format,body);
         return {...payload,body:JSON.stringify(inner)};
       }catch(_){
         return payload;
@@ -276,7 +266,7 @@
     }
 
     if(payload?.analysis){
-      return {...payload,analysis:patchAnalysis(payload.analysis,format,request)};
+      return {...payload,analysis:patchAnalysis(payload.analysis,format,body)};
     }
 
     return payload;
