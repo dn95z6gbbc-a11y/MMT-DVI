@@ -1,4 +1,202 @@
 (() => {
+  // Build 80: spacing-only polish. No analysis logic is changed.
+  const airStyle = document.createElement('style');
+  airStyle.id = 'mmt-build80-air';
+  airStyle.textContent = `
+    .shell{
+      padding-top:42px !important;
+      padding-bottom:96px !important;
+    }
+
+    .top{
+      padding-bottom:34px !important;
+    }
+
+    .card{
+      margin:28px 0 !important;
+      padding:38px !important;
+    }
+
+    .hero{
+      min-height:500px !important;
+      padding:66px 62px !important;
+      margin-bottom:36px !important;
+    }
+
+    .hero h1{
+      margin-top:32px !important;
+      margin-bottom:24px !important;
+    }
+
+    .hero .tag{
+      margin-bottom:24px !important;
+      line-height:1.22 !important;
+    }
+
+    .hero .note{
+      line-height:1.72 !important;
+    }
+
+    .hero .privacy{
+      margin-top:38px !important;
+      padding:20px 22px !important;
+      line-height:1.62 !important;
+    }
+
+    form > .card{
+      margin:30px 0 !important;
+    }
+
+    .section-title{
+      margin-bottom:34px !important;
+      gap:17px !important;
+    }
+
+    .section-title p{
+      margin-top:7px !important;
+      line-height:1.55 !important;
+    }
+
+    .grid{
+      gap:24px 22px !important;
+    }
+
+    .field{
+      gap:10px !important;
+      margin:15px 0 !important;
+    }
+
+    input,select,textarea{
+      padding:16px 17px !important;
+    }
+
+    textarea{
+      min-height:132px !important;
+    }
+
+    .check{
+      padding:19px 20px !important;
+      line-height:1.58 !important;
+    }
+
+    .upload{
+      padding:24px !important;
+    }
+
+    .privacy:not(.hero .privacy),
+    .ai-box{
+      padding:20px !important;
+      line-height:1.6 !important;
+    }
+
+    .actions{
+      gap:14px !important;
+      padding-top:4px !important;
+    }
+
+    .btn{
+      min-height:50px !important;
+      padding:14px 20px !important;
+    }
+
+    #report.card{
+      padding:42px !important;
+    }
+
+    #reportTitle{
+      margin-top:18px !important;
+      margin-bottom:10px !important;
+    }
+
+    #reportMeta{
+      margin-bottom:26px !important;
+    }
+
+    #report .block{
+      margin:16px 0 !important;
+      padding:22px 23px !important;
+      line-height:1.62 !important;
+    }
+
+    #report .final{
+      margin-top:18px !important;
+      padding:22px 23px !important;
+      line-height:1.58 !important;
+    }
+
+    #vcheckUnifiedVideoReport{
+      margin-top:26px !important;
+    }
+
+    #vcheckUnifiedVideoReport p,
+    #vcheckUnifiedVideoReport li{
+      line-height:1.72 !important;
+    }
+
+    #vcheckUnifiedVideoProgress{
+      margin-top:20px !important;
+      padding:18px 20px !important;
+      line-height:1.55 !important;
+    }
+
+    .footer{
+      padding-top:34px !important;
+    }
+
+    @media(max-width:680px){
+      .shell{
+        padding-top:18px !important;
+        padding-bottom:58px !important;
+      }
+
+      .top{
+        padding-bottom:20px !important;
+      }
+
+      .card{
+        margin:16px 0 !important;
+        padding:23px !important;
+      }
+
+      .hero{
+        min-height:390px !important;
+        padding:38px 26px 34px !important;
+        margin-bottom:20px !important;
+      }
+
+      .hero h1{
+        margin-top:24px !important;
+        margin-bottom:18px !important;
+      }
+
+      .hero .privacy{
+        margin-top:28px !important;
+        padding:17px 18px !important;
+      }
+
+      form > .card{
+        margin:18px 0 !important;
+      }
+
+      .section-title{
+        margin-bottom:26px !important;
+      }
+
+      .grid{
+        gap:14px !important;
+      }
+
+      .field{
+        margin:12px 0 !important;
+      }
+
+      #report.card{
+        padding:25px !important;
+      }
+    }
+  `;
+  (document.head || document.documentElement).appendChild(airStyle);
+
   let stopped = false;
 
   function polish(){
