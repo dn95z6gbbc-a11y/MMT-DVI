@@ -67,6 +67,7 @@ html,body{margin:0;width:100%;height:100%;background:#f4f6fa;font-family:system-
     const engine=await childScript('./video-engine-v5.js?v=52-speech-roles',10000);
     const consistency=await childScript('./video-report-consistency-v1.js?v=54-story-report',10000);
     const consistency2=await childScript('./video-report-consistency-v2.js?v=57-story-sync-guard',10000);
+    const storyDiagnostic=await childScript('./video-story-diagnostic-v1.js?v=58-story-role-state',10000);
     const answerDurationPost=await childScript('./video-answer-duration-post-v1.js?v=50-universal-video',10000);
     const polish=await childScript('./v30-polish.js?v=50-universal-video',10000);
 
@@ -77,6 +78,7 @@ html,body{margin:0;width:100%;height:100%;background:#f4f6fa;font-family:system-
     if(!engine)console.warn('V-CHECK universal video engine did not load');
     if(!consistency)console.warn('V-CHECK report consistency bridge did not load');
     if(!consistency2)console.warn('V-CHECK strict story consistency guard did not load');
+    if(!storyDiagnostic)console.warn('V-CHECK story role diagnostic did not load');
     if(!answerDurationPost)console.warn('V-CHECK answer-duration post bridge did not load');
     if(!polish)console.warn('V-CHECK polish did not load');
   }catch(err){
