@@ -1,7 +1,7 @@
 // V-CHECK speech-role bridge v1: enrich story analysis with standup/sync/voiceover episodes.
 (() => {
   if (window.__VCHECK_SPEECH_ROLES_V1__) return;
-  window.__VCHECK_SPEECH_ROLES_V1__ = '1.2';
+  window.__VCHECK_SPEECH_ROLES_V1__ = '1.3';
 
   const API_URL = 'https://functions.yandexcloud.net/d4ejdq5v5too7egeop63';
   const STORY_FORMATS = new Set(['story_event', 'story_theme']);
@@ -25,32 +25,42 @@
     document.getElementById('vcheckSpeechRoleDiagnostic')?.remove();
   }
 
+  function mountDiagnosticWhenReady(code, status, segmentsCount, attempt = 0) {
+    if (!window.__VCHECK_SPEECH_ROLE_ERROR__) return;
+    if (document.getElementById('vcheckSpeechRoleDiagnostic')) return;
+
+    const root = document.getElementById('vcheckUnifiedVideoReport');
+    if (!root) {
+      if (attempt < 60) {
+        setTimeout(() => mountDiagnosticWhenReady(code, status, segmentsCount, attempt + 1), 500);
+      }
+      return;
+    }
+
+    const box = document.createElement('div');
+    box.id = 'vcheckSpeechRoleDiagnostic';
+    box.style.cssText = 'margin-top:12px;border:1px solid #fecaca;background:#fff1f2;color:#991b1b;border-radius:12px;padding:11px 13px;font-size:12px;line-height:1.45';
+    box.innerHTML = `<b>Техническая диагностика V-CHECK</b><br>Модуль ролей речи: <code>${code}</code>${status ? ` · HTTP ${status}` : ''} · сегментов расшифровки: ${segmentsCount}.`;
+    root.appendChild(box);
+  }
+
   function showDiagnostic(error, segments) {
     const code = String(error?.message || 'speech_roles_unknown_error');
     const status = Number.isFinite(Number(error?.status)) ? Number(error.status) : null;
     const payload = error?.payload || null;
+    const segmentsCount = Array.isArray(segments) ? segments.length : 0;
 
     window.__VCHECK_SPEECH_ROLE_ERROR__ = {
       code,
       status,
-      segmentsCount: Array.isArray(segments) ? segments.length : 0,
+      segmentsCount,
       payload,
       at: new Date().toISOString()
     };
 
     console.warn('V-CHECK speech-role diagnostic:', window.__VCHECK_SPEECH_ROLE_ERROR__);
     setProgress(`Модуль ролей речи не завершился: ${code}. Основной отчёт продолжаем собирать.`);
-
-    setTimeout(() => {
-      const root = document.getElementById('vcheckUnifiedVideoReport');
-      if (!root || document.getElementById('vcheckSpeechRoleDiagnostic')) return;
-
-      const box = document.createElement('div');
-      box.id = 'vcheckSpeechRoleDiagnostic';
-      box.style.cssText = 'margin-top:12px;border:1px solid #fecaca;background:#fff1f2;color:#991b1b;border-radius:12px;padding:11px 13px;font-size:12px;line-height:1.45';
-      box.innerHTML = `<b>Техническая диагностика V-CHECK</b><br>Модуль ролей речи: <code>${code}</code>${status ? ` · HTTP ${status}` : ''} · сегментов расшифровки: ${Array.isArray(segments) ? segments.length : 0}.`;
-      root.appendChild(box);
-    }, 1400);
+    mountDiagnosticWhenReady(code, status, segmentsCount);
   }
 
   async function analyzeSpeechRoles(segments, mediaObservations) {
