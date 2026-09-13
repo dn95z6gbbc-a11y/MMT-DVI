@@ -63,7 +63,8 @@ html,body{margin:0;width:100%;height:100%;background:#f4f6fa;font-family:system-
     const coverage=await childScript('./video-24-frames-v1.js?v=50-universal-video',10000);
     const contactSheets=await childScript('./video-global-contactsheet-v2.js?v=50-universal-video',10000);
     const audioCompat=await childScript('./video-audio-compat-v1.js?v=51-universal-audio',10000);
-    const engine=await childScript('./video-engine-v5.js?v=51-universal-audio',10000);
+    const speechRoles=await childScript('./video-speech-roles-v1.js?v=52-speech-roles',10000);
+    const engine=await childScript('./video-engine-v5.js?v=52-speech-roles',10000);
     const consistency=await childScript('./video-report-consistency-v1.js?v=50-universal-video',10000);
     const answerDurationPost=await childScript('./video-answer-duration-post-v1.js?v=50-universal-video',10000);
     const polish=await childScript('./v30-polish.js?v=50-universal-video',10000);
@@ -71,6 +72,7 @@ html,body{margin:0;width:100%;height:100%;background:#f4f6fa;font-family:system-
     if(!coverage)console.warn('V-CHECK 24-frame coverage bridge did not load');
     if(!contactSheets)console.warn('V-CHECK contact-sheet bridge did not load');
     if(!audioCompat)console.warn('V-CHECK uploaded-video audio bridge did not load');
+    if(!speechRoles)console.warn('V-CHECK speech-role bridge did not load');
     if(!engine)console.warn('V-CHECK universal video engine did not load');
     if(!consistency)console.warn('V-CHECK report consistency bridge did not load');
     if(!answerDurationPost)console.warn('V-CHECK answer-duration post bridge did not load');
