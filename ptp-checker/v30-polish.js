@@ -208,6 +208,16 @@
     (document.head || document.documentElement).appendChild(nonvideo);
   }
 
+  // v30 deliberately strips Mammoth at startup for Safari. Restore it lazily only for DOCX.
+  if (!window.__VCHECK_DOCX_COMPAT_V1__) {
+    const docxCompat = document.createElement('script');
+    docxCompat.src = './nonvideo-docx-compat-v1.js?v=81-docx-restore';
+    docxCompat.async = false;
+    docxCompat.onload = () => console.log('V-CHECK DOCX compatibility loaded');
+    docxCompat.onerror = () => console.warn('V-CHECK DOCX compatibility did not load');
+    (document.head || document.documentElement).appendChild(docxCompat);
+  }
+
   let stopped = false;
 
   function polish(){
