@@ -4,7 +4,7 @@
   const STORY_FORMATS=new Set(['story_event','story_theme']);
 
   if(window.__VCHECK_REPORT_CONSISTENCY_V2__)return;
-  window.__VCHECK_REPORT_CONSISTENCY_V2__='2.0';
+  window.__VCHECK_REPORT_CONSISTENCY_V2__='2.1';
 
   const nativeFetch=window.fetch.bind(window);
 
@@ -57,6 +57,34 @@
       seen.add(key);
       return true;
     });
+  }
+
+  function rebuildFinalRecommendation(analysis){
+    const checks=Array.isArray(analysis?.checks)?analysis.checks:[];
+    const confirmed=checks
+      .filter(check=>['problem','warning'].includes(check?.status)&&String(check?.recommendation||'').trim())
+      .map(check=>String(check.recommendation).trim())
+      .filter((value,index,list)=>list.indexOf(value)===index)
+      .slice(0,3);
+
+    if(confirmed.length){
+      analysis.finalRecommendation=confirmed.join(' ');
+      return;
+    }
+
+    if(checks.some(check=>check?.status==='unknown')){
+      analysis.finalRecommendation='Перед сдачей проверьте вручную пункты, которые V-CHECK не смог определить автоматически.';
+    }
+  }
+
+  function syncTeacherReviewWithUnknowns(analysis){
+    const checks=Array.isArray(analysis?.checks)?analysis.checks:[];
+    const current=Array.isArray(analysis?.teacherReview)?analysis.teacherReview:[];
+    const additions=checks
+      .filter(check=>check?.status==='unknown')
+      .map(check=>`Проверить вручную: ${String(check?.title||check?.id||'критерий')}`);
+
+    analysis.teacherReview=dedupeStrings([...current,...additions]);
   }
 
   function patchAnalysis(analysis,format){
@@ -115,11 +143,9 @@
       });
     }
 
-    if(Array.isArray(analysis.teacherReview)){
-      analysis.teacherReview=dedupeStrings(analysis.teacherReview);
-    }
-
     analysis.checks=checks;
+    syncTeacherReviewWithUnknowns(analysis);
+    rebuildFinalRecommendation(analysis);
     return analysis;
   }
 
@@ -163,5 +189,5 @@
     }
   };
 
-  console.log('V-CHECK report consistency v2.0 loaded');
+  console.log('V-CHECK report consistency v2.1 loaded');
 })();
