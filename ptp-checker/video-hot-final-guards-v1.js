@@ -1,9 +1,9 @@
-// V-CHECK hot final guards v1: evidence-first checks for short vertical news explainers.
+// V-CHECK hot final guards v2: evidence-first checks for short vertical news explainers.
 (() => {
   const API_URL = 'https://functions.yandexcloud.net/d4ejdq5v5too7egeop63';
 
-  if (window.__VCHECK_HOT_FINAL_GUARDS_V1__) return;
-  window.__VCHECK_HOT_FINAL_GUARDS_V1__ = '1.0';
+  if (window.__VCHECK_HOT_FINAL_GUARDS_V2__) return;
+  window.__VCHECK_HOT_FINAL_GUARDS_V2__ = '2.0';
 
   const nativeFetch = window.fetch.bind(window);
 
@@ -26,6 +26,10 @@
     return /хронометраж|длительн|duration/.test(checkText(check));
   }
 
+  function isVerticalCheck(check) {
+    return /вертикал|ориентац.*видео|video.*orientation|orientation.*video/.test(checkText(check));
+  }
+
   function isHostCheck(check) {
     const text = checkText(check);
     return /ведущ.*кадр|ведущий.*кадр|автор.*кадр|presenter.*frame/.test(text) && !/не состоит|только.*ведущ|перебив/.test(text);
@@ -34,6 +38,21 @@
   function isHostOnlyCheck(check) {
     const text = checkText(check);
     return /не состоит.*ведущ|только.*ведущ|говорящ.*голов|перебив|визуальн.*черед|visual.*altern/.test(text);
+  }
+
+  function isVisualConfirmationCheck(check) {
+    const text = checkText(check);
+    return /визуальн.*подтверж|подтверж.*визуал|визуальн.*доказ|visual.*evidence/.test(text);
+  }
+
+  function isVisualMeaningCheck(check) {
+    const text = checkText(check);
+    return /визуал.*подтверж.*сказ|визуал.*сказан|визуал.*фон|картин.*подтверж.*реч|visual.*support.*speech|visual.*background/.test(text);
+  }
+
+  function isMontageRhythmCheck(check) {
+    const text = checkText(check);
+    return /монтаж.*ритм|ритм.*монтаж|editing.*rhythm|montage.*rhythm/.test(text);
   }
 
   function isSourcesCheck(check) {
@@ -92,6 +111,26 @@
     return /\b(?:сегодня|вчера|позавчера)\b|\b\d{1,2}\s+(?:январ[яь]|феврал[яь]|март[а]?|апрел[яь]|ма[яй]|июн[яь]|июл[яь]|август[а]?|сентябр[яь]|октябр[яь]|ноябр[яь]|декабр[яь])\b|\b\d{1,2}[./-]\d{1,2}(?:[./-]\d{2,4})?\b|\b\d+\s+(?:день|дня|дней|час|часа|часов)\s+назад\b/.test(text);
   }
 
+  function materialDimensions() {
+    const meta = String(document.getElementById('materialMeta')?.textContent || '');
+    const match = meta.match(/\b(\d{2,5})\s*[×xX]\s*(\d{2,5})\b/);
+    if (match) {
+      return { width: Number(match[1]), height: Number(match[2]) };
+    }
+
+    try {
+      if (typeof material !== 'undefined') {
+        const width = Number(material?.width);
+        const height = Number(material?.height);
+        if (Number.isFinite(width) && Number.isFinite(height) && width > 0 && height > 0) {
+          return { width, height };
+        }
+      }
+    } catch (_) {}
+
+    return { width: 0, height: 0 };
+  }
+
   function buildHotEvidence() {
     const vision = window.VCHECK_VIDEO_VISION || {};
     const frames = Array.isArray(vision?.frames) ? vision.frames : [];
@@ -121,6 +160,10 @@
       .filter(Boolean)
       .slice(0, 12);
 
+    const explicitSourceFrames = sourceLikeVisuals.filter(text =>
+      /скриншот|публикац|новостн.*сайт|страниц.*сайт|документ|стать[яи]|источник|reuters|tass|тасс|bbc|cnn|\bap\b|afp|bloomberg|рбк|риа|yonhap/i.test(text)
+    ).length;
+
     const openingSegments = segments
       .filter(segment => Number(segment?.startSeconds) < 5.5)
       .slice(0, 6)
@@ -132,13 +175,17 @@
 
     const source = window.__VCHECK_VIDEO_SOURCE__ || {};
     const durationSeconds = Number(source?.durationSeconds);
+    const dimensions = materialDimensions();
 
     return {
       durationSeconds: Number.isFinite(durationSeconds) ? durationSeconds : null,
+      width: dimensions.width,
+      height: dimensions.height,
       hostFrames,
       brollFrames,
       graphicFrames,
       interviewFrames,
+      explicitSourceFrames,
       cutawaysConfirmed: vision?.cutawaysConfirmed === true,
       visualAlternationConfirmed: vision?.visualAlternationConfirmed === true,
       selectedFrames: Number(vision?.selectedFrames || 0),
@@ -152,6 +199,38 @@
     const text = String(value || '').trim();
     if (!text) return '';
     return /[.!?…]$/.test(text) ? text : `${text}.`;
+  }
+
+  function addTeacherReview(analysis, text) {
+    if (!Array.isArray(analysis.teacherReview)) analysis.teacherReview = [];
+    const normalized = String(text || '').trim();
+    if (!normalized) return;
+    const key = normalized.toLowerCase().replace(/^проверить вручную:\s*/i, '').replace(/^необходимо проверить\s*/i, '');
+    const exists = analysis.teacherReview.some(item => {
+      const candidate = String(item || '').toLowerCase().replace(/^проверить вручную:\s*/i, '').replace(/^необходимо проверить\s*/i, '');
+      return candidate === key || candidate.includes(key) || key.includes(candidate);
+    });
+    if (!exists) analysis.teacherReview.push(normalized);
+  }
+
+  function dedupeTeacherReview(analysis) {
+    if (!Array.isArray(analysis.teacherReview)) return;
+    const result = [];
+    const keys = [];
+    for (const item of analysis.teacherReview) {
+      const text = String(item || '').trim();
+      if (!text) continue;
+      const key = text.toLowerCase()
+        .replace(/^проверить вручную:\s*/i, '')
+        .replace(/^необходимо проверить\s*/i, '')
+        .replace(/^проверить\s*/i, '')
+        .replace(/[.:;]+$/g, '')
+        .trim();
+      if (keys.some(existing => existing === key || existing.includes(key) || key.includes(existing))) continue;
+      keys.push(key);
+      result.push(text);
+    }
+    analysis.teacherReview = result;
   }
 
   function rebuildFinalRecommendation(analysis) {
@@ -184,11 +263,17 @@
     const checks = Array.isArray(analysis.checks) ? analysis.checks : [];
 
     const duration = Number(hotEvidence?.durationSeconds);
+    const width = Number(hotEvidence?.width || 0);
+    const height = Number(hotEvidence?.height || 0);
     const hostFrames = Number(hotEvidence?.hostFrames || 0);
+    const extraVisualFrames = Number(hotEvidence?.brollFrames || 0) + Number(hotEvidence?.graphicFrames || 0) + Number(hotEvidence?.interviewFrames || 0);
     const visualSupport =
       hotEvidence?.cutawaysConfirmed === true ||
       hotEvidence?.visualAlternationConfirmed === true ||
-      Number(hotEvidence?.brollFrames || 0) + Number(hotEvidence?.graphicFrames || 0) >= 2;
+      extraVisualFrames >= 2;
+
+    let visualUncertain = false;
+    let montageUncertain = false;
 
     for (const check of checks) {
       if (isDurationCheck(check) && Number.isFinite(duration)) {
@@ -205,6 +290,16 @@
         }
       }
 
+      if (isVerticalCheck(check) && width > 0 && height > 0) {
+        const vertical = height > width;
+        check.status = vertical ? 'ok' : 'problem';
+        check.finding = vertical
+          ? `Ориентация видео вертикальная: ${width}×${height}.`
+          : `Ориентация видео не вертикальная: ${width}×${height}.`;
+        check.evidence = [`Метаданные видео: ${width}×${height}.`];
+        check.recommendation = vertical ? '' : 'Экспортировать «Горячий разбор» в вертикальном формате.';
+      }
+
       if (isHostCheck(check) && hostFrames >= 1) {
         check.status = 'ok';
         check.finding = 'Ведущий присутствует в кадре.';
@@ -212,11 +307,54 @@
         check.recommendation = '';
       }
 
-      if (isHostOnlyCheck(check) && hostFrames >= 1 && visualSupport) {
-        check.status = 'ok';
-        check.finding = 'Ролик не состоит только из ведущего: есть визуальные перебивки и подтверждения.';
-        check.evidence = ['Визуальный анализ подтвердил чередование ведущего с дополнительным визуальным материалом.'];
-        check.recommendation = '';
+      if (isHostOnlyCheck(check)) {
+        if (hostFrames >= 1 && visualSupport) {
+          check.status = 'ok';
+          check.finding = 'Ролик не состоит только из ведущего: есть дополнительные планы, графика или визуальные вставки.';
+          check.evidence = [`В выборке: b-roll — ${Number(hotEvidence?.brollFrames || 0)}, графика — ${Number(hotEvidence?.graphicFrames || 0)}, интервью — ${Number(hotEvidence?.interviewFrames || 0)}.`];
+          check.recommendation = '';
+        } else if (check?.status === 'problem') {
+          check.status = 'unknown';
+          check.finding = 'По выборке из отдельных стоп-кадров нельзя доказать, что ролик состоит только из ведущего: короткие перебивки могли не попасть в выборку.';
+          check.evidence = [];
+          check.recommendation = 'Проверить в готовом видео наличие визуальных перебивок.';
+          addTeacherReview(analysis, 'Проверить вручную: визуальные перебивки');
+          visualUncertain = true;
+        }
+      }
+
+      if (isVisualConfirmationCheck(check)) {
+        if (Number(hotEvidence?.explicitSourceFrames || 0) >= 1) {
+          check.status = 'ok';
+          check.finding = 'В выборке обнаружены кадры с признаками публикации, документа, сайта или другого визуального подтверждения.';
+          check.evidence = [`Кадров с явными признаками визуального источника: ${Number(hotEvidence.explicitSourceFrames)}.`];
+          check.recommendation = '';
+        } else if (check?.status === 'problem') {
+          check.status = 'unknown';
+          check.finding = 'Отсутствие визуальных подтверждений нельзя доказать по 24 отдельным стоп-кадрам.';
+          check.evidence = [];
+          check.recommendation = 'Проверить в готовом видео наличие скриншотов, документов, фото, видео или других подтверждений инфоповода.';
+          addTeacherReview(analysis, 'Проверить вручную: визуальные подтверждения');
+          visualUncertain = true;
+        }
+      }
+
+      if (isVisualMeaningCheck(check) && check?.status === 'problem' && !visualSupport) {
+        check.status = 'unknown';
+        check.finding = 'По выборке стоп-кадров нельзя надёжно определить, поддерживает ли визуал сказанное на всём протяжении ролика.';
+        check.evidence = [];
+        check.recommendation = 'Проверить в готовом видео, помогает ли визуал подтверждать и объяснять сказанное, а не только служит фоном.';
+        addTeacherReview(analysis, 'Проверить вручную: соответствие визуала сказанному');
+        visualUncertain = true;
+      }
+
+      if (isMontageRhythmCheck(check) && check?.status === 'problem' && !hotEvidence?.visualAlternationConfirmed) {
+        check.status = 'unknown';
+        check.finding = 'По равномерной выборке стоп-кадров нельзя надёжно измерить монтажный ритм готового ролика.';
+        check.evidence = [];
+        check.recommendation = 'Преподавателю проверить монтажный ритм по готовому видео.';
+        addTeacherReview(analysis, 'Проверить вручную: монтажный ритм');
+        montageUncertain = true;
       }
 
       if (isSourcesCheck(check) && check?.status === 'ok' && !hasTwoExplicitSources(check, hotEvidence)) {
@@ -234,24 +372,35 @@
       }
     }
 
-    const review = Array.isArray(analysis.teacherReview) ? analysis.teacherReview : [];
     for (const check of checks) {
       if (check?.status !== 'unknown') continue;
-      if (!isSourcesCheck(check) && !isFreshnessCheck(check)) continue;
-      const item = `Проверить вручную: ${String(check?.title || check?.id || 'критерий')}`;
-      if (!review.includes(item)) review.push(item);
+      if (isSourcesCheck(check) || isFreshnessCheck(check)) {
+        addTeacherReview(analysis, `Проверить вручную: ${String(check?.title || check?.id || 'критерий')}`);
+      }
     }
-    analysis.teacherReview = review;
 
     if (Array.isArray(analysis.priorityFixes)) {
       analysis.priorityFixes = analysis.priorityFixes.filter(item => {
         const text = `${item?.problem || ''} ${item?.why || ''} ${item?.how || ''}`.toLowerCase();
         if (/источ/.test(text) && checks.some(check => isSourcesCheck(check) && check?.status === 'unknown')) return false;
         if (/свеж|недел|инфоповод/.test(text) && checks.some(check => isFreshnessCheck(check) && check?.status === 'unknown')) return false;
+        if (visualUncertain && /говорящ.*голов|перебив|визуальн.*подтверж|визуальн.*элемент|визуал.*фон/.test(text)) return false;
+        if (montageUncertain && /монтаж.*ритм|ритм.*монтаж/.test(text)) return false;
         return true;
       });
     }
 
+    if (analysis.overall && typeof analysis.overall.summary === 'string' && (visualUncertain || montageUncertain)) {
+      const parts = analysis.overall.summary.split(/(?<=[.!?])\s+/).filter(Boolean);
+      const cleaned = parts.filter(part => {
+        if (visualUncertain && /говорящ.*голов|визуальн.*состав|визуальн.*подтверж|визуал.*фон|перебив/i.test(part)) return false;
+        if (montageUncertain && /монтаж.*ритм|ритм.*монтаж/i.test(part)) return false;
+        return true;
+      }).join(' ').trim();
+      analysis.overall.summary = cleaned || 'Материал проанализирован по расшифровке и доступной визуальной выборке. Часть визуальных критериев требует проверки по готовому видео.';
+    }
+
+    dedupeTeacherReview(analysis);
     rebuildFinalRecommendation(analysis);
     syncOverallStatus(analysis);
     return analysis;
@@ -306,5 +455,5 @@
     }
   };
 
-  console.log('V-CHECK hot final guards v1.0 loaded');
+  console.log('V-CHECK hot final guards v2.0 loaded');
 })();
