@@ -12,9 +12,55 @@
 </head>
 <body>
   <iframe
-    src="../ptp-checker/v30.html?build=81-nonvideo-restore"
+    id="vcheckFrame"
+    src="../ptp-checker/v30.html?build=82-nonvideo-restore"
     title="MMT V-CHECK"
     allow="clipboard-read; clipboard-write"
   ></iframe>
+  <script>
+  (()=>{
+    const frame=document.getElementById('vcheckFrame');
+    let timer=null;
+    let attempts=0;
+
+    function injectIntoApp(){
+      attempts++;
+      try{
+        const wrapperDoc=frame.contentDocument;
+        const app=wrapperDoc?.getElementById('app');
+        const appDoc=app?.contentDocument;
+        const appWin=app?.contentWindow;
+        if(!appDoc?.getElementById('form')||!appWin){
+          if(attempts<80)return false;
+          clearInterval(timer);
+          return false;
+        }
+
+        function add(src,guard){
+          if(appWin[guard])return;
+          const s=appDoc.createElement('script');
+          s.src=src;
+          s.async=false;
+          (appDoc.head||appDoc.documentElement).appendChild(s);
+        }
+
+        add('/MMT-DVI/ptp-checker/nonvideo-engine-v1.js?v=82-nonvideo-restore','__VCHECK_NONVIDEO_ENGINE_V1__');
+        add('/MMT-DVI/ptp-checker/nonvideo-docx-compat-v1.js?v=82-docx-restore','__VCHECK_DOCX_COMPAT_V1__');
+        clearInterval(timer);
+        return true;
+      }catch(error){
+        if(attempts>=80)clearInterval(timer);
+        return false;
+      }
+    }
+
+    frame.addEventListener('load',()=>{
+      attempts=0;
+      clearInterval(timer);
+      timer=setInterval(injectIntoApp,250);
+      injectIntoApp();
+    });
+  })();
+  </script>
 </body>
 </html>
