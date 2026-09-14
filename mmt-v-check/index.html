@@ -13,7 +13,7 @@
 <body>
   <iframe
     id="vcheckFrame"
-    src="../ptp-checker/v30.html?build=82-nonvideo-restore"
+    src="../ptp-checker/v30.html?build=83-async-podcast"
     title="MMT V-CHECK"
     allow="clipboard-read; clipboard-write"
   ></iframe>
@@ -44,7 +44,8 @@
           (appDoc.head||appDoc.documentElement).appendChild(s);
         }
 
-        add('/MMT-DVI/ptp-checker/nonvideo-engine-v1.js?v=82-nonvideo-restore','__VCHECK_NONVIDEO_ENGINE_V1__');
+        add('/MMT-DVI/ptp-checker/nonvideo-podcast-async-v1.js?v=83-async-podcast','__VCHECK_PODCAST_ASYNC_BRIDGE_V1__');
+        add('/MMT-DVI/ptp-checker/nonvideo-engine-v1.js?v=83-async-podcast','__VCHECK_NONVIDEO_ENGINE_V1__');
         add('/MMT-DVI/ptp-checker/nonvideo-docx-compat-v1.js?v=82-docx-restore','__VCHECK_DOCX_COMPAT_V1__');
         clearInterval(timer);
         return true;
