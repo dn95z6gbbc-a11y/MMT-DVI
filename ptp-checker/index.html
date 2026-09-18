@@ -73,7 +73,7 @@ function openShareChoices(file){
   const box=document.createElement('div');
   box.style.cssText='width:min(440px,100%);background:#11151b;border:1px solid #303944;border-radius:22px;padding:20px;box-shadow:0 28px 80px rgba(0,0,0,.45);color:#fff';
   const heading=document.createElement('div');
-  heading.innerHTML='<b style="font-size:20px">Поделиться отчётом</b><div style="margin-top:5px;color:#9aa3af;font-size:13px;line-height:1.45">Выберите способ отправки.</div>';
+  heading.innerHTML='<b style="font-size:20px">Поделиться отчётом</b><div style="margin-top:5px;color:#9aa3af;font-size:13px;line-height:1.45">Чтобы отправить сам PDF в Telegram или Почту, выберите первый пункт и затем нужное приложение в системном меню.</div>';
   box.appendChild(heading);
   const actions=document.createElement('div');
   actions.style.cssText='display:grid;gap:10px;margin-top:18px';
@@ -90,31 +90,33 @@ function openShareChoices(file){
   };
 
   if(file&&navigator.share&&(!navigator.canShare||navigator.canShare({files:[file]}))){
-    addButton('Отправить PDF…',async()=>{
+    addButton('Отправить сам PDF…',async()=>{
       try{
+        // Важно: передаём ТОЛЬКО файл.
+        // Некоторые приложения (в том числе Telegram на macOS)
+        // при смеси text + files забирают только текст.
         await navigator.share({
-          title:'MMT V-CHECK',
-          text:'Результат проверки материала',
           files:[file]
         });
         overlay.remove();
       }catch(error){
         if(error?.name!=='AbortError'){
-          alert('Системное меню отправки недоступно. Выберите Telegram, ВКонтакте или Почту.');
+          console.error('V-CHECK PDF share error',error);
+          alert('Не удалось передать PDF через системное меню. Скачайте PDF кнопкой «Скачать PDF» и прикрепите его вручную.');
         }
       }
     },true);
   }
 
-  addButton('Telegram',()=>{
+  addButton('Telegram — отправить ссылку',()=>{
     window.open('https://t.me/share/url?url='+encodedUrl+'&text='+encodedText,'_blank','noopener,noreferrer');
     overlay.remove();
   });
-  addButton('ВКонтакте',()=>{
+  addButton('ВКонтакте — отправить ссылку',()=>{
     window.open('https://vk.com/share.php?url='+encodedUrl+'&title='+encodeURIComponent('MMT V-CHECK')+'&comment='+encodedText,'_blank','noopener,noreferrer');
     overlay.remove();
   });
-  addButton('Почта',()=>{
+  addButton('Почта — текст и ссылка',()=>{
     const subject=encodeURIComponent('Результат MMT V-CHECK');
     const body=encodeURIComponent(summary+'\n\n'+SHARE_APP_URL);
     window.location.href='mailto:?subject='+subject+'&body='+body;
