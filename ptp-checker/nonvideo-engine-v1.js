@@ -274,26 +274,111 @@
     try { await api({action:'cancelUpload', fullName, group, reservationId, quotaDate}); } catch (_) {}
   }
 
+  function storageFileName(file) {
+    const original = String(file?.name || '');
+    const match = original.match(/\.([a-z0-9]{1,12})$/i);
+    const ext = match ? `.${match[1].toLowerCase()}` : '.bin';
+
+    // В objectKey не кладём исходное имя файла.
+    // Это убирает пробелы/кириллицу из подписанного URL,
+    // а имя, которое видит студент, остаётся прежним.
+    return `material${ext}`;
+  }
+
+  async function uploadToStorage(created, file, contentType) {
+    const controller = new AbortController();
+    const timeoutMs =
+      file.size <= 10 * 1024 * 1024
+        ? 90 * 1000
+        : 8 * 60 * 1000;
+
+    const timer = setTimeout(
+      () => controller.abort(),
+      timeoutMs
+    );
+
+    try {
+      return await fetch(created.uploadUrl, {
+        method:'PUT',
+        headers:created.uploadHeaders || {'Content-Type':contentType},
+        body:file,
+        signal:controller.signal
+      });
+    } finally {
+      clearTimeout(timer);
+    }
+  }
+
   async function createAndUpload(file, fullName, group) {
     const contentType = file.type || (/\.docx$/i.test(file.name) ? 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' : /\.wav$/i.test(file.name) ? 'audio/wav' : /\.mp3$/i.test(file.name) ? 'audio/mpeg' : 'application/octet-stream');
-    const created = await api({
-      action:'createUpload',
+
+    let created;
+
+    try {
+      created = await api({
+        action:'createUpload',
+        fullName,
+        group,
+        fileName:storageFileName(file),
+        fileSize:file.size,
+        contentType
+      });
+    } catch (error) {
+      throw new Error(
+        'Не удалось подготовить загрузку файла. Проверьте соединение и попробуйте ещё раз.'
+      );
+    }
+
+    let lastError = null;
+
+    for (let attempt = 0; attempt < 2; attempt++) {
+      try {
+        const upload = await uploadToStorage(
+          created,
+          file,
+          contentType
+        );
+
+        if (upload.ok) {
+          return {...created, contentType};
+        }
+
+        lastError = new Error(
+          `Хранилище вернуло ошибку ${upload.status}.`
+        );
+
+        // Повторяем только временные серверные ошибки.
+        if (upload.status < 500) break;
+      } catch (error) {
+        lastError = error;
+      }
+
+      if (attempt === 0) {
+        await sleep(1500);
+      }
+    }
+
+    // Сетевая ошибка больше не должна съедать попытку студента.
+    await cancelReservation(
       fullName,
       group,
-      fileName:file.name,
-      fileSize:file.size,
-      contentType
-    });
-    const upload = await fetch(created.uploadUrl, {
-      method:'PUT',
-      headers:created.uploadHeaders || {'Content-Type':contentType},
-      body:file
-    });
-    if (!upload.ok) {
-      await cancelReservation(fullName, group, created.reservationId, created.quotaDate);
-      throw new Error(`Хранилище вернуло ошибку ${upload.status}.`);
+      created.reservationId,
+      created.quotaDate
+    );
+
+    if (lastError?.name === 'AbortError') {
+      throw new Error(
+        'Загрузка файла во временное хранилище заняла слишком много времени. Попробуйте ещё раз.'
+      );
     }
-    return {...created, contentType};
+
+    if (/Хранилище вернуло ошибку/.test(lastError?.message || '')) {
+      throw lastError;
+    }
+
+    throw new Error(
+      'Не удалось загрузить файл во временное хранилище. V-CHECK отменил эту попытку; проверьте соединение и повторите загрузку.'
+    );
   }
 
   async function analyzeText(file, fullName, group, button) {
