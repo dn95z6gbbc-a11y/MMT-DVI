@@ -44,7 +44,99 @@ function check(){let c=FORMATS[$('format').value],r=[];add(r,$('name').value.tri
 function showReport(r,c){let bad=r.filter(x=>!x.ok),good=r.filter(x=>x.ok),need=CONTENT[$('format').value]||[];$('report').style.display='block';$('reportTitle').textContent=bad.length?`Найдено нарушений: ${bad.length}`:'Формальных нарушений не найдено';$('reportMeta').textContent=`${$('name').value.trim()||'Без имени'} · ${$('group').value||'Без группы'} · ${c.label} · ${$('slot').options[$('slot').selectedIndex].text}`;$('bad').innerHTML=`<b>Не соблюдено · ${bad.length}</b>${bad.length?`<ul>${bad.map(x=>`<li>${esc(x.text)}</li>`).join('')}</ul>`:'<p>Формальных нарушений не найдено.</p>'}`;$('goodCount').textContent=`· ${good.length}`;$('good').innerHTML=`<ul>${good.map(x=>`<li>${esc(x.text)}</li>`).join('')}</ul>`;$('neutral').innerHTML=`<b>Нужно проверить по содержанию</b><p class="hint">Эти пункты нельзя честно подтвердить только по метаданным файла. После подключения ИИ часть из них будет проверяться автоматически, окончательное решение остаётся за преподавателем.</p><ul>${need.map(x=>`<li>${esc(x)}</li>`).join('')}</ul>`;$('final').textContent=bad.length?`Найдено ${bad.length} нарушений. Исправьте их перед сдачей.`:'Формальных нарушений не найдено. Материал можно отправлять на содержательную проверку.';reportText=`MMT V-CHECK\n${$('reportMeta').textContent}\n\nНЕ СОБЛЮДЕНО (${bad.length})\n${bad.map(x=>'— '+x.text).join('\n')||'— нет'}\n\nСОБЛЮДЕНО (${good.length})\n${good.map(x=>'— '+x.text).join('\n')}\n\nНУЖНО ПРОВЕРИТЬ ПО СОДЕРЖАНИЮ\n${need.map(x=>'— '+x).join('\n')}`;$('report').scrollIntoView({behavior:'smooth'})}
 $('copy').onclick=async()=>{await navigator.clipboard.writeText(reportText);$('copy').textContent='Скопировано';setTimeout(()=>$('copy').textContent='Скопировать',1300)};
 $('pdf').onclick=async()=>{let el=$('pdfArea'),opt={margin:8,filename:'MMT-V-CHECK.pdf',image:{type:'jpeg',quality:.96},html2canvas:{scale:2,useCORS:true},jsPDF:{unit:'mm',format:'a4',orientation:'portrait'}};await html2pdf().set(opt).from(el).save()};
-$('share').onclick=async()=>{let blob;try{blob=await html2pdf().set({margin:8,image:{type:'jpeg',quality:.94},html2canvas:{scale:1.5},jsPDF:{unit:'mm',format:'a4'}}).from($('pdfArea')).outputPdf('blob')}catch(e){}let file=blob?new File([blob],'MMT-V-CHECK.pdf',{type:'application/pdf'}):null;if(file&&navigator.canShare&&navigator.canShare({files:[file]})){await navigator.share({title:'MMT V-CHECK',text:'Результат проверки материала',files:[file]})}else if(navigator.share){await navigator.share({title:'MMT V-CHECK',text:reportText})}else{await navigator.clipboard.writeText(reportText);alert('Отчёт скопирован. Его можно вставить в Telegram.')}};
+const SHARE_APP_URL='https://dn95z6gbbc-a11y.github.io/MMT-DVI/v/';
+async function makeSharePdf(){
+  try{
+    const blob=await html2pdf().set({
+      margin:8,
+      image:{type:'jpeg',quality:.94},
+      html2canvas:{scale:1.5,useCORS:true},
+      jsPDF:{unit:'mm',format:'a4',orientation:'portrait'}
+    }).from($('pdfArea')).outputPdf('blob');
+    return blob?new File([blob],'MMT-V-CHECK.pdf',{type:'application/pdf'}):null;
+  }catch(error){
+    console.error('V-CHECK share PDF error',error);
+    return null;
+  }
+}
+function shareSummary(){
+  const title=($('reportTitle')?.textContent||'Результат V-CHECK').trim();
+  const meta=($('reportMeta')?.textContent||'').trim();
+  const final=($('final')?.textContent||'').trim();
+  return ['MMT V-CHECK',title,meta,final].filter(Boolean).join('\n\n').slice(0,1800);
+}
+function openShareChoices(file){
+  document.getElementById('vcheckShareSheet')?.remove();
+  const overlay=document.createElement('div');
+  overlay.id='vcheckShareSheet';
+  overlay.style.cssText='position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,.64);display:grid;place-items:center;padding:20px;backdrop-filter:blur(8px)';
+  const box=document.createElement('div');
+  box.style.cssText='width:min(440px,100%);background:#11151b;border:1px solid #303944;border-radius:22px;padding:20px;box-shadow:0 28px 80px rgba(0,0,0,.45);color:#fff';
+  const heading=document.createElement('div');
+  heading.innerHTML='<b style="font-size:20px">Поделиться отчётом</b><div style="margin-top:5px;color:#9aa3af;font-size:13px;line-height:1.45">Выберите способ отправки.</div>';
+  box.appendChild(heading);
+  const actions=document.createElement('div');
+  actions.style.cssText='display:grid;gap:10px;margin-top:18px';
+  const summary=shareSummary();
+  const encodedUrl=encodeURIComponent(SHARE_APP_URL);
+  const encodedText=encodeURIComponent(summary);
+  const addButton=(label,handler,accent=false)=>{
+    const b=document.createElement('button');
+    b.type='button';
+    b.textContent=label;
+    b.style.cssText='width:100%;border:1px solid '+(accent?'#ed7946':'#303944')+';background:'+(accent?'#ed7946':'#171d24')+';color:'+(accent?'#0b0c0f':'#fff')+';border-radius:14px;padding:13px 14px;font-weight:850;cursor:pointer';
+    b.onclick=handler;
+    actions.appendChild(b);
+  };
+
+  if(file&&navigator.share&&(!navigator.canShare||navigator.canShare({files:[file]}))){
+    addButton('Отправить PDF…',async()=>{
+      try{
+        await navigator.share({
+          title:'MMT V-CHECK',
+          text:'Результат проверки материала',
+          files:[file]
+        });
+        overlay.remove();
+      }catch(error){
+        if(error?.name!=='AbortError'){
+          alert('Системное меню отправки недоступно. Выберите Telegram, ВКонтакте или Почту.');
+        }
+      }
+    },true);
+  }
+
+  addButton('Telegram',()=>{
+    window.open('https://t.me/share/url?url='+encodedUrl+'&text='+encodedText,'_blank','noopener,noreferrer');
+    overlay.remove();
+  });
+  addButton('ВКонтакте',()=>{
+    window.open('https://vk.com/share.php?url='+encodedUrl+'&title='+encodeURIComponent('MMT V-CHECK')+'&comment='+encodedText,'_blank','noopener,noreferrer');
+    overlay.remove();
+  });
+  addButton('Почта',()=>{
+    const subject=encodeURIComponent('Результат MMT V-CHECK');
+    const body=encodeURIComponent(summary+'\n\n'+SHARE_APP_URL);
+    window.location.href='mailto:?subject='+subject+'&body='+body;
+    overlay.remove();
+  });
+  addButton('Закрыть',()=>overlay.remove());
+
+  box.appendChild(actions);
+  overlay.appendChild(box);
+  overlay.addEventListener('click',e=>{if(e.target===overlay)overlay.remove()});
+  document.body.appendChild(overlay);
+}
+$('share').onclick=async()=>{
+  const button=$('share');
+  const oldText=button.textContent;
+  button.disabled=true;
+  button.textContent='Готовим отправку…';
+  const file=await makeSharePdf();
+  button.disabled=false;
+  button.textContent=oldText;
+  openShareChoices(file);
+};
 $('format').addEventListener('change',renderMaterial);$('form').addEventListener('submit',e=>{e.preventDefault();check()});$('form').addEventListener('reset',()=>setTimeout(()=>{$('report').style.display='none';cover={w:0,h:0,size:0};renderMaterial()},0));Object.entries(FORMATS).forEach(([k,v])=>$('format').add(new Option(v.label,k)));renderMaterial();
 </script>
 <script src="./video-frames-direct-v2.js"></script>
