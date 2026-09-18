@@ -13,9 +13,9 @@
 <body>
   <iframe
     id="vcheckFrame"
-    src="../ptp-checker/v30.html?build=84-upload-hardening"
+    src="../ptp-checker/v30.html?build=85-sharing"
     title="MMT V-CHECK"
-    allow="clipboard-read; clipboard-write"
+    allow="web-share; clipboard-read; clipboard-write"
   ></iframe>
   <script>
   (()=>{
@@ -44,8 +44,8 @@
           (appDoc.head||appDoc.documentElement).appendChild(s);
         }
 
-        add('/MMT-DVI/ptp-checker/nonvideo-podcast-async-v1.js?v=84-upload-hardening','__VCHECK_PODCAST_ASYNC_BRIDGE_V1__');
-        add('/MMT-DVI/ptp-checker/nonvideo-engine-v1.js?v=84-upload-hardening','__VCHECK_NONVIDEO_ENGINE_V1__');
+        add('/MMT-DVI/ptp-checker/nonvideo-podcast-async-v1.js?v=85-sharing','__VCHECK_PODCAST_ASYNC_BRIDGE_V1__');
+        add('/MMT-DVI/ptp-checker/nonvideo-engine-v1.js?v=85-sharing','__VCHECK_NONVIDEO_ENGINE_V1__');
         add('/MMT-DVI/ptp-checker/nonvideo-docx-compat-v1.js?v=82-docx-restore','__VCHECK_DOCX_COMPAT_V1__');
         clearInterval(timer);
         return true;
