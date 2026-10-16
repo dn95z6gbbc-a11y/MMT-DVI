@@ -86,7 +86,7 @@
         }, 502);
       }
 
-      const deadline = Date.now() + 12 * 60 * 1000;
+      const deadline = Date.now() + 20 * 60 * 1000;
 
       while (Date.now() < deadline) {
         await sleep(4000);
@@ -116,7 +116,7 @@
       return jsonResponse({
         ok: false,
         error: 'podcast_analysis_timeout',
-        message: 'ИИ-анализ подкаста занял больше 12 минут. Попробуйте повторить проверку позже.'
+        message: 'ИИ-анализ подкаста занял больше 20 минут. Попробуйте повторить проверку позже.'
       }, 504);
 
     } catch (error) {
