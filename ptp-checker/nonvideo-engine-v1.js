@@ -439,27 +439,66 @@
 
     try {
       if (button) button.textContent = 'Запускаем расшифровку…';
-      setStatus('info', '<b>SpeechKit распознаёт речь.</b> После расшифровки YandexGPT автоматически проанализирует содержание. Это может занять несколько минут.');
-      const started = await api({
-        action:'startTranscription',
-        objectKey:created.objectKey,
-        fileName:file.name,
-        contentType:created.contentType
-      });
-      if (!started?.operationId) throw new Error('SpeechKit не вернул идентификатор операции.');
+      setStatus('info', '<b>SpeechKit распознаёт речь.</b> Приложение само ускоряет обработку длинного подкаста; студенту ничего резать не нужно.');
+
+      let started;
+      let fastPodcastMode = false;
+
+      try {
+        started = await api({
+          action:'startPodcastTranscriptionFast',
+          objectKey:created.objectKey,
+          fileName:file.name,
+          contentType:created.contentType
+        });
+        fastPodcastMode =
+          started?.fastPodcastMode === true &&
+          Array.isArray(started?.chunks) &&
+          started.chunks.length > 0;
+      } catch (error) {
+        // Пока backend без нового режима — сохраняем старый путь.
+        // После обновления Yandex Function этот fallback почти не используется.
+        if (error?.payload?.error !== 'unknown_action') {
+          throw error;
+        }
+
+        started = await api({
+          action:'startTranscription',
+          objectKey:created.objectKey,
+          fileName:file.name,
+          contentType:created.contentType
+        });
+      }
+
+      if (
+        !fastPodcastMode &&
+        !started?.operationId
+      ) {
+        throw new Error('SpeechKit не вернул идентификатор операции.');
+      }
 
       let transcription = null;
-
-      // 15 минут было нашим локальным ограничением, а не лимитом SpeechKit.
-      // Для длинных подкастов асинхронная операция может законно идти дольше,
-      // поэтому продолжаем опрашивать её до 45 минут.
       const transcriptionStartedAt = Date.now();
-      const deadline = transcriptionStartedAt + 45 * 60 * 1000;
+
+      // Быстрый режим рассчитан на нормальный студенческий UX:
+      // служебные 15-минутные части распознаются параллельно.
+      // Старый одиночный режим оставляем только как временный fallback.
+      const deadline =
+        transcriptionStartedAt +
+        (fastPodcastMode ? 15 : 45) *
+          60 * 1000;
+
       let lastShownMinute = -1;
 
       while (Date.now() < deadline) {
-        const elapsedMs = Date.now() - transcriptionStartedAt;
-        const elapsedMinutes = Math.floor(elapsedMs / 60000);
+        const elapsedMs =
+          Date.now() -
+          transcriptionStartedAt;
+
+        const elapsedMinutes =
+          Math.floor(
+            elapsedMs / 60000
+          );
 
         if (button) {
           button.textContent =
@@ -468,37 +507,68 @@
               : 'Распознаём речь…';
         }
 
-        if (elapsedMinutes !== lastShownMinute) {
-          lastShownMinute = elapsedMinutes;
-          setStatus(
-            'info',
-            `<b>SpeechKit распознаёт речь.</b> Прошло: ${elapsedMinutes} мин. Для длинных подкастов это может занять заметное время; после расшифровки автоматически запустится YandexGPT.`
-          );
-        }
+        let current;
 
-        const current = await api({
-          action:'getTranscription',
-          operationId:started.operationId,
-          format:'podcast',
-          annotation:$('annotation')?.value || '',
-          significance:$('significance')?.value || '',
-          aiElement:$('aiElement')?.value || '',
-          aiPlace:$('aiPlace')?.value || ''
-        });
+        if (fastPodcastMode) {
+          current = await api({
+            action:'getPodcastTranscriptionFast',
+            chunks:started.chunks
+          });
+        } else {
+          current = await api({
+            action:'getTranscription',
+            operationId:started.operationId,
+            format:'podcast',
+            annotation:$('annotation')?.value || '',
+            significance:$('significance')?.value || '',
+            aiElement:$('aiElement')?.value || '',
+            aiPlace:$('aiPlace')?.value || ''
+          });
+        }
 
         if (current?.transcriptionReady) {
           transcription = current;
           break;
         }
 
-        // Реже опрашиваем длинные операции, чтобы не создавать
-        // лишнюю нагрузку на Cloud Function.
-        await sleep(elapsedMs < 2 * 60 * 1000 ? 5000 : 10000);
+        if (elapsedMinutes !== lastShownMinute) {
+          lastShownMinute =
+            elapsedMinutes;
+
+          const progress =
+            fastPodcastMode &&
+            Number.isFinite(
+              Number(
+                current?.chunksDone
+              )
+            ) &&
+            Number.isFinite(
+              Number(
+                current?.chunksTotal
+              )
+            )
+              ? ` Готово частей: ${current.chunksDone} из ${current.chunksTotal}.`
+              : '';
+
+          setStatus(
+            'info',
+            `<b>SpeechKit распознаёт речь.</b> Прошло: ${elapsedMinutes} мин.${progress} После расшифровки автоматически запустится YandexGPT.`
+          );
+        }
+
+        await sleep(
+          elapsedMs <
+            2 * 60 * 1000
+              ? 5000
+              : 10000
+        );
       }
 
       if (!transcription) {
         throw new Error(
-          'SpeechKit не завершил расшифровку за 45 минут. Это уже ненормально долго; попробуйте повторить проверку позже.'
+          fastPodcastMode
+            ? 'Ускоренная расшифровка не завершилась за 15 минут. Попробуйте повторить проверку позже.'
+            : 'SpeechKit не завершил расшифровку за 45 минут. Попробуйте повторить проверку позже.'
         );
       }
       if (!clean(transcription.transcript)) throw new Error('SpeechKit завершил работу, но не вернул расшифровку.');
