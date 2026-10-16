@@ -449,9 +449,33 @@
       if (!started?.operationId) throw new Error('SpeechKit не вернул идентификатор операции.');
 
       let transcription = null;
-      const deadline = Date.now() + 15 * 60 * 1000;
+
+      // 15 минут было нашим локальным ограничением, а не лимитом SpeechKit.
+      // Для длинных подкастов асинхронная операция может законно идти дольше,
+      // поэтому продолжаем опрашивать её до 45 минут.
+      const transcriptionStartedAt = Date.now();
+      const deadline = transcriptionStartedAt + 45 * 60 * 1000;
+      let lastShownMinute = -1;
+
       while (Date.now() < deadline) {
-        if (button) button.textContent = 'Распознаём речь…';
+        const elapsedMs = Date.now() - transcriptionStartedAt;
+        const elapsedMinutes = Math.floor(elapsedMs / 60000);
+
+        if (button) {
+          button.textContent =
+            elapsedMinutes > 0
+              ? `Распознаём речь… ${elapsedMinutes} мин`
+              : 'Распознаём речь…';
+        }
+
+        if (elapsedMinutes !== lastShownMinute) {
+          lastShownMinute = elapsedMinutes;
+          setStatus(
+            'info',
+            `<b>SpeechKit распознаёт речь.</b> Прошло: ${elapsedMinutes} мин. Для длинных подкастов это может занять заметное время; после расшифровки автоматически запустится YandexGPT.`
+          );
+        }
+
         const current = await api({
           action:'getTranscription',
           operationId:started.operationId,
@@ -461,13 +485,22 @@
           aiElement:$('aiElement')?.value || '',
           aiPlace:$('aiPlace')?.value || ''
         });
+
         if (current?.transcriptionReady) {
           transcription = current;
           break;
         }
-        await sleep(5000);
+
+        // Реже опрашиваем длинные операции, чтобы не создавать
+        // лишнюю нагрузку на Cloud Function.
+        await sleep(elapsedMs < 2 * 60 * 1000 ? 5000 : 10000);
       }
-      if (!transcription) throw new Error('Расшифровка заняла больше 15 минут. Попробуйте повторить проверку позже.');
+
+      if (!transcription) {
+        throw new Error(
+          'SpeechKit не завершил расшифровку за 45 минут. Это уже ненормально долго; попробуйте повторить проверку позже.'
+        );
+      }
       if (!clean(transcription.transcript)) throw new Error('SpeechKit завершил работу, но не вернул расшифровку.');
 
       let result = transcription;
