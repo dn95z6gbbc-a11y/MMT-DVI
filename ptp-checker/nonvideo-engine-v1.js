@@ -391,67 +391,92 @@
     setStatus('info', `<b>Загружаем ${esc(file.name)}</b> во временное защищённое хранилище…`);
     const created = await createAndUpload(file, fullName, group);
 
-    if (button) button.textContent = 'ИИ анализирует материал…';
-    setStatus('info', '<b>YandexGPT читает материал и сверяет его с инструктажем выбранного формата…</b> Это может занять 10–40 секунд.');
-    const result = await api({
-      action:'analyzeMaterial',
-      format:formatKey(),
-      text,
-      annotation:$('annotation')?.value || '',
-      significance:$('significance')?.value || '',
-      aiElement:$('aiElement')?.value || '',
-      aiPlace:$('aiPlace')?.value || ''
-    });
-    renderAnalysis(result.analysis || {}, 'text');
-    const remaining = Number.isFinite(created?.remainingToday) ? created.remainingToday : null;
-    setStatus('ok', remaining === null
-      ? '<b>Проверка завершена.</b> Формальный и глубокий ИИ-отчёт готовы.'
-      : `<b>Проверка завершена.</b> Формальный и глубокий ИИ-отчёт готовы. На сегодня осталось проверок: <b>${remaining}</b>.`);
-  }
-
-  async function analyzePodcast(file, fullName, group, button) {
-    if (!/\.(mp3|wav)$/i.test(file.name || '')) throw new Error('Подкаст должен быть в MP3 или WAV.');
-
-    if (button) button.textContent = 'Загружаем подкаст…';
-    setStatus('info', `<b>Загружаем ${esc(file.name)}</b> во временное защищённое хранилище…`);
-    const created = await createAndUpload(file, fullName, group);
-
-    if (button) button.textContent = 'Запускаем расшифровку…';
-    setStatus('info', '<b>SpeechKit распознаёт речь.</b> После расшифровки YandexGPT автоматически проанализирует содержание. Это может занять несколько минут.');
-    const started = await api({
-      action:'startTranscription',
-      objectKey:created.objectKey,
-      fileName:file.name,
-      contentType:created.contentType
-    });
-    if (!started?.operationId) throw new Error('SpeechKit не вернул идентификатор операции.');
-
-    let transcription = null;
-    const deadline = Date.now() + 15 * 60 * 1000;
-    while (Date.now() < deadline) {
-      if (button) button.textContent = 'Распознаём речь…';
-      const current = await api({
-        action:'getTranscription',
-        operationId:started.operationId,
-        format:'podcast',
+    try {
+      if (button) button.textContent = 'ИИ анализирует материал…';
+      setStatus('info', '<b>YandexGPT читает материал и сверяет его с инструктажем выбранного формата…</b> Это может занять 10–40 секунд.');
+      const result = await api({
+        action:'analyzeMaterial',
+        format:formatKey(),
+        text,
         annotation:$('annotation')?.value || '',
         significance:$('significance')?.value || '',
         aiElement:$('aiElement')?.value || '',
         aiPlace:$('aiPlace')?.value || ''
       });
-      if (current?.transcriptionReady) {
-        transcription = current;
-        break;
-      }
-      await sleep(5000);
-    }
-    if (!transcription) throw new Error('Расшифровка заняла больше 15 минут. Попробуйте повторить проверку позже.');
-    if (!clean(transcription.transcript)) throw new Error('SpeechKit завершил работу, но не вернул расшифровку.');
 
-    let result = transcription;
-    if (!result.analysis) {
+      if (!result?.analysis || typeof result.analysis !== 'object') {
+        throw new Error('YandexGPT не вернул глубокий анализ материала.');
+      }
+
+      // Формальный отчёт показываем только после готовности ИИ,
+      // чтобы студент не принял промежуточный отчёт за финальный.
+      if (typeof check === 'function') check();
+      renderAnalysis(result.analysis, 'text');
+
+      const remaining = Number.isFinite(created?.remainingToday) ? created.remainingToday : null;
+      setStatus('ok', remaining === null
+        ? '<b>Проверка завершена.</b> Формальный и глубокий ИИ-отчёт готовы.'
+        : `<b>Проверка завершена.</b> Формальный и глубокий ИИ-отчёт готовы. На сегодня осталось проверок: <b>${remaining}</b>.`);
+    } catch (error) {
+      await cancelReservation(
+        fullName,
+        group,
+        created.reservationId,
+        created.quotaDate
+      );
+      throw error;
+    }
+  }
+
+  async function analyzePodcast(file, fullName, group, button) {
+    if (!/\.(mp3|wav|ogg)$/i.test(file.name || '')) {
+      throw new Error('Подкаст должен быть в MP3, WAV или OGG.');
+    }
+
+    if (button) button.textContent = 'Загружаем подкаст…';
+    setStatus('info', `<b>Загружаем ${esc(file.name)}</b> во временное защищённое хранилище…`);
+    const created = await createAndUpload(file, fullName, group);
+
+    try {
+      if (button) button.textContent = 'Запускаем расшифровку…';
+      setStatus('info', '<b>SpeechKit распознаёт речь.</b> После расшифровки YandexGPT автоматически проанализирует содержание. Это может занять несколько минут.');
+      const started = await api({
+        action:'startTranscription',
+        objectKey:created.objectKey,
+        fileName:file.name,
+        contentType:created.contentType
+      });
+      if (!started?.operationId) throw new Error('SpeechKit не вернул идентификатор операции.');
+
+      let transcription = null;
+      const deadline = Date.now() + 15 * 60 * 1000;
+      while (Date.now() < deadline) {
+        if (button) button.textContent = 'Распознаём речь…';
+        const current = await api({
+          action:'getTranscription',
+          operationId:started.operationId,
+          format:'podcast',
+          annotation:$('annotation')?.value || '',
+          significance:$('significance')?.value || '',
+          aiElement:$('aiElement')?.value || '',
+          aiPlace:$('aiPlace')?.value || ''
+        });
+        if (current?.transcriptionReady) {
+          transcription = current;
+          break;
+        }
+        await sleep(5000);
+      }
+      if (!transcription) throw new Error('Расшифровка заняла больше 15 минут. Попробуйте повторить проверку позже.');
+      if (!clean(transcription.transcript)) throw new Error('SpeechKit завершил работу, но не вернул расшифровку.');
+
+      let result = transcription;
+
       if (button) button.textContent = 'ИИ анализирует подкаст…';
-      setStatus('info', '<b>Расшифровка готова. YandexGPT анализирует содержание подкаста…</b>');
+      setStatus('info', '<b>Расшифровка готова. YandexGPT анализирует содержание подкаста…</b> Не закрывайте страницу до появления итогового отчёта.');
+
+      // Для подкаста глубокий ИИ-анализ обязателен.
+      // Не считаем формальную проверку завершённой без analysis.
       const ai = await api({
         action:'analyzeMaterial',
         format:'podcast',
@@ -464,13 +489,29 @@
         aiPlace:$('aiPlace')?.value || ''
       });
       result = {...result, ...ai};
-    }
 
-    renderAnalysis(result.analysis || {}, 'audio');
-    const remaining = Number.isFinite(created?.remainingToday) ? created.remainingToday : null;
-    setStatus('ok', remaining === null
-      ? '<b>Проверка завершена.</b> Расшифровка и глубокий ИИ-отчёт готовы.'
-      : `<b>Проверка завершена.</b> Расшифровка и глубокий ИИ-отчёт готовы. На сегодня осталось проверок: <b>${remaining}</b>.`);
+      if (!result?.analysis || typeof result.analysis !== 'object') {
+        throw new Error('YandexGPT не вернул глубокий анализ подкаста.');
+      }
+
+      // Только теперь показываем единый финальный отчёт:
+      // формальные пункты + глубокий ИИ-анализ.
+      if (typeof check === 'function') check();
+      renderAnalysis(result.analysis, 'audio');
+
+      const remaining = Number.isFinite(created?.remainingToday) ? created.remainingToday : null;
+      setStatus('ok', remaining === null
+        ? '<b>Проверка завершена.</b> Расшифровка и глубокий ИИ-отчёт готовы.'
+        : `<b>Проверка завершена.</b> Расшифровка и глубокий ИИ-отчёт готовы. На сегодня осталось проверок: <b>${remaining}</b>.`);
+    } catch (error) {
+      await cancelReservation(
+        fullName,
+        group,
+        created.reservationId,
+        created.quotaDate
+      );
+      throw error;
+    }
   }
 
   async function run() {
@@ -508,11 +549,24 @@
   ensureUi();
 
   const form = $('form');
-  form?.addEventListener('submit', () => {
+  form?.addEventListener('submit', event => {
     const kind = nonvideoKind();
-    if (!kind || running) return;
-    setTimeout(run, 90);
-  });
+    if (!kind) return;
+
+    // Перехватываем текст/подкаст ДО старого формального submit-handler.
+    // Иначе приложение успевает показать формальный отчёт раньше,
+    // чем завершится YandexGPT, и студент может принять его за финальный.
+    event.preventDefault();
+    event.stopImmediatePropagation();
+
+    if (running) return;
+
+    const report = $('report');
+    if (report) report.style.display = 'none';
+    document.getElementById('nonvideoAiResult')?.remove();
+
+    run();
+  }, true);
 
   $('format')?.addEventListener('change', () => {
     document.getElementById('nonvideoAiResult')?.remove();
